@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Teacher Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>👩‍🏫 Teacher Login</h1>
+  <form id="teacherLoginForm">
+    <input type="email" id="teacherEmail" placeholder="Email" required>
+    <input type="password" id="teacherPassword" placeholder="Password" required>
+    <button type="submit">Login</button>
+    <button type="button" onclick="window.location.href='index.html'">⬅️ Back</button>
+
+  </form>
+  <p id="loginMessage" style="color:red;"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const form = document.getElementById("teacherLoginForm");
+  const msg = document.getElementById("loginMessage");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msg.textContent = "";
+
+    // اقرأ القيم وازيل الفراغات
+    const email = document.getElementById("teacherEmail").value.trim();
+    const password = document.getElementById("teacherPassword").value.trim();
+
+    if (!email || !password) {
+      msg.textContent = "Please enter email and password.";
+      return;
+    }
+
+    try {
+      // اطبع لمعرفة القيم اللي ترسل
+      console.log("Attempt login for:", email);
+
+      // استعلام الصف من جدول teachers
+      const { data, error, status } = await supabase
+        .from("teachers")
+        .select("*")
+        .eq("email", email);
+
+      console.log("supabase response:", { data, error, status });
+
+      if (error) {
+        // لو في خطأ من Supabase (مثلاً سياسة RLS تمنع القراءة) نعرض رسالة واضحة
+        msg.textContent = "Error querying database. Check console for details.";
+        console.error("Supabase error:", error);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        msg.textContent = "No teacher found with that email.";
+        return;
+      }
+
+      if (data.length > 1) {
+        msg.textContent = "Multiple users found with same email — check database.";
+        console.warn("multiple teacher rows:", data);
+        return;
+      }
+
+      const teacher = data[0];
+
+      // قارن الباسورد (مؤقت - لو مش مشفر)
+      if (teacher.password !== password) {
+        msg.textContent = "Invalid email or password.";
+        return;
+      }
+
+      // نجاح تسجيل الدخول
+      localStorage.setItem("teacherEmail", email);
+      window.location.href = "teacherDashboard.html";
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      msg.textContent = "Unexpected error. Check console.";
+    }
+  });
+</script>
+
+</body>
+</html>

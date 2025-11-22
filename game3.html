@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Avoid the Red Boxes</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', sans-serif;
+      text-align: center;
+      background: #f0f9ff;
+    }
+    h2 {
+      color: #0077b6;
+    }
+    #gameArea {
+      width: 320px;
+      height: 320px;
+      margin: 20px auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-gap: 8px;
+    }
+    .box {
+      width: 70px;
+      height: 70px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .box:hover {
+      transform: scale(1.1);
+    }
+    .green {
+      background-color: #90ee90;
+    }
+    .red {
+      background-color: #ff6961;
+    }
+    #msg {
+      font-weight: bold;
+      color: #333;
+      margin-top: 10px;
+    }
+    button {
+      background: #0077b6;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005b8a;
+    }
+  </style>
+</head>
+<body>
+  <h2>🟢 Avoid the Red Boxes!</h2>
+  <p>Click on the green boxes only! If you click a red one, the game ends.</p>
+  
+  <div id="gameArea"></div>
+  <p id="msg">Score: 0</p>
+  <button onclick="window.history.back()">⬅ Back</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // إعداد Supabase لتحديث التقدّم
+    const supabase = window.supabase.createClient(
+      "https://awgrbkqpooyvaopydaic.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo"
+    );
+
+    const gameArea = document.getElementById("gameArea");
+    const msg = document.getElementById("msg");
+    let score = 0;
+    let gameOver = false;
+
+    function startGame() {
+      for (let i = 0; i < 16; i++) {
+        const box = document.createElement("div");
+        box.classList.add("box");
+        box.classList.add(Math.random() < 0.7 ? "green" : "red"); // 70% خضراء، 30% حمراء
+        box.onclick = () => handleClick(box);
+        gameArea.appendChild(box);
+      }
+    }
+
+    function handleClick(box) {
+      if (gameOver) return;
+
+      if (box.classList.contains("red")) {
+        box.style.border = "3px solid black";
+        msg.textContent = `❌ Game Over! Your final score: ${score}`;
+        gameOver = true;
+        updateProgress();
+      } else {
+        score++;
+        msg.textContent = `Score: ${score}`;
+        box.style.visibility = "hidden";
+      }
+    }
+
+    async function updateProgress() {
+  const email = localStorage.getItem("childEmail");
+  if (!email) return;
+
+  // 🧩 الخطوة 1: نجيب آخر progress وpoints من قاعدة البيانات
+  const { data: childData, error } = await supabase
+    .from("children")
+    .select("progress, points")
+    .eq("email", email)
+    .single();
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  // 🧩 الخطوة 2: نزيد القيم الحالية
+  let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+  let currentPoints = childData.points || 0;
+
+  progress.gamesCompleted += 1;
+  currentPoints += 10; // ✅ نضيف 10 فوق النقاط القديمة
+
+  // 🧩 الخطوة 3: نحدّث القيم الجديدة بالداتا بيس
+  await supabase
+    .from("children")
+    .update({ progress, points: currentPoints })
+    .eq("email", email);
+}
+
+    startGame();
+  </script>
+</body>
+</html>

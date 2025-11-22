@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-section {
+      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+      border-radius: 20px;
+      padding: 30px;
+      margin: 30px auto;
+      max-width: 800px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+      border: 3px solid #6c5ce7;
+    }
+    
+    .admin-section h2 {
+      color: #6c5ce7;
+      border-bottom: 3px solid #a29bfe;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    textarea {
+      width: 85%;
+      padding: 15px;
+      border-radius: 10px;
+      border: 2px solid #dfe6e9;
+      font-size: 16px;
+      font-family: 'Comic Sans MS', sans-serif;
+      margin: 10px auto;
+      display: block;
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      border-color: #6c5ce7;
+      outline: none;
+      box-shadow: 0 0 10px rgba(108, 92, 231, 0.3);
+    }
+
+    select {
+      width: 85%;
+      padding: 15px;
+      border-radius: 10px;
+      border: 2px solid #dfe6e9;
+      font-size: 16px;
+      margin: 10px auto;
+      display: block;
+      background: white;
+      cursor: pointer;
+    }
+
+    select:focus {
+      border-color: #6c5ce7;
+      outline: none;
+    }
+
+    .success-msg {
+      color: #00b894;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    .error-msg {
+      color: #ff6b6b;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+
+    #ideasTable {
+      margin-top: 20px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Admin Dashboard</h1>
+  <p>Welcome, Admin! Manage teachers and educational content ideas.</p>
+  <button onclick="logout()" style="background: linear-gradient(135deg, #d63031 0%, #ff7675 100%);">Logout</button>
+
+  <!-- Section 1: Add Teacher Account -->
+  <div class="admin-section">
+    <h2>👩‍🏫 Add Teacher Account</h2>
+    <p>Create a new teacher account to give them access to the teacher dashboard.</p>
+    
+    <form id="addTeacherForm">
+      <input type="email" id="teacherEmail" placeholder="Teacher Email" required>
+      <input type="password" id="teacherPassword" placeholder="Teacher Password" required>
+      <button type="submit">➕ Add Teacher</button>
+    </form>
+    
+    <p id="teacherMessage"></p>
+
+    <hr style="margin: 30px 0;">
+    
+    <h3>📋 Current Teachers</h3>
+    <div id="teachersList">Loading...</div>
+  </div>
+
+  <!-- Section 2: Submit Game/Quiz Ideas -->
+  <div class="admin-section">
+    <h2>💡 Submit Game/Quiz/Lesson Ideas</h2>
+    <p>Add ideas for new educational content. The IT team will review and implement them.</p>
+    
+    <form id="addIdeaForm">
+      <select id="ideaType" required>
+        <option value="">Select Type</option>
+        <option value="game">🎮 Game</option>
+        <option value="quiz">❓ Quiz</option>
+        <option value="lesson">📚 Lesson</option>
+      </select>
+
+      <input type="text" id="ideaTitle" placeholder="Title (e.g., 'Password Safety Game')" required>
+      
+      <textarea id="ideaDescription" placeholder="Describe your idea in detail...&#10;&#10;For example:&#10;- What will children learn?&#10;- How does the game/quiz work?&#10;- What makes it fun and educational?" required></textarea>
+
+      <button type="submit">🚀 Submit Idea</button>
+    </form>
+    
+    <p id="ideaMessage"></p>
+
+    <hr style="margin: 30px 0;">
+    
+    <h3>📝 Submitted Ideas</h3>
+    <div id="ideasTable">Loading...</div>
+  </div>
+
+  <!-- Supabase Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    // Check if admin is logged in
+    const adminEmail = localStorage.getItem("adminEmail");
+    if (!adminEmail) {
+      alert("Access denied! Please login first.");
+      window.location.href = "adminLogin.html";
+    }
+
+    function logout() {
+      localStorage.removeItem("adminEmail");
+      window.location.href = "adminLogin.html";
+    }
+
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ========== Add Teacher Account ==========
+    document.getElementById("addTeacherForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById("teacherEmail").value.trim().toLowerCase();
+      const password = document.getElementById("teacherPassword").value.trim();
+      const msg = document.getElementById("teacherMessage");
+
+      // Check if teacher already exists
+      const { data: existing } = await supabase
+        .from("teachers")
+        .select("email")
+        .eq("email", email);
+
+      if (existing && existing.length > 0) {
+        msg.className = "error-msg";
+        msg.textContent = "❌ This teacher already exists!";
+        return;
+      }
+
+      // Add new teacher
+      const { error } = await supabase
+        .from("teachers")
+        .insert([{ email, password }]);
+
+      if (error) {
+        msg.className = "error-msg";
+        msg.textContent = "❌ Error adding teacher: " + error.message;
+        console.error(error);
+        return;
+      }
+
+      msg.className = "success-msg";
+      msg.textContent = "✅ Teacher account created successfully!";
+      document.getElementById("addTeacherForm").reset();
+      loadTeachers();
+    });
+
+    // Load and display all teachers
+    async function loadTeachers() {
+      const { data, error } = await supabase
+        .from("teachers")
+        .select("id, email")
+        .order("id", { ascending: true });
+
+      const container = document.getElementById("teachersList");
+
+      if (error) {
+        container.innerHTML = "<p class='error-msg'>Error loading teachers.</p>";
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        container.innerHTML = "<p>No teachers found.</p>";
+        return;
+      }
+
+      let html = `
+        <table border="1" style="margin: auto; width: 100%; border-collapse: collapse;">
+          <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Action</th>
+          </tr>
+      `;
+
+      data.forEach(teacher => {
+        html += `
+          <tr>
+            <td>${teacher.id}</td>
+            <td>${teacher.email}</td>
+            <td><button onclick="deleteTeacher(${teacher.id}, '${teacher.email}')" 
+                style="background: #d63031; padding: 8px 15px;">Delete</button></td>
+          </tr>
+        `;
+      });
+
+      html += "</table>";
+      container.innerHTML = html;
+    }
+
+    // Delete teacher
+    window.deleteTeacher = async (id, email) => {
+      if (!confirm(`Are you sure you want to delete teacher: ${email}?`)) return;
+
+      const { error } = await supabase
+        .from("teachers")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        alert("Error deleting teacher: " + error.message);
+        return;
+      }
+
+      alert("✅ Teacher deleted successfully!");
+      loadTeachers();
+    };
+
+    // ========== Submit Game/Quiz Ideas ==========
+    document.getElementById("addIdeaForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const type = document.getElementById("ideaType").value;
+      const title = document.getElementById("ideaTitle").value.trim();
+      const description = document.getElementById("ideaDescription").value.trim();
+      const msg = document.getElementById("ideaMessage");
+
+      const { error } = await supabase
+        .from("game_ideas")
+        .insert([{
+          idea_type: type,
+          title: title,
+          description: description,
+          submitted_by: adminEmail
+        }]);
+
+      if (error) {
+        msg.className = "error-msg";
+        msg.textContent = "❌ Error submitting idea: " + error.message;
+        console.error(error);
+        return;
+      }
+
+      msg.className = "success-msg";
+      msg.textContent = "✅ Idea submitted successfully! The IT team will review it.";
+      document.getElementById("addIdeaForm").reset();
+      loadIdeas();
+    });
+
+    // Load and display all ideas
+    async function loadIdeas() {
+      const { data, error } = await supabase
+        .from("game_ideas")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      const container = document.getElementById("ideasTable");
+
+      if (error) {
+        container.innerHTML = "<p class='error-msg'>Error loading ideas.</p>";
+        console.error(error);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        container.innerHTML = "<p>No ideas submitted yet.</p>";
+        return;
+      }
+
+      let html = `
+        <table border="1" style="margin: auto; width: 100%; border-collapse: collapse;">
+          <tr>
+            <th>Type</th>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Submitted By</th>
+            <th>Date</th>
+          </tr>
+      `;
+
+      data.forEach(idea => {
+        const typeEmoji = idea.idea_type === 'game' ? '🎮' : 
+                         idea.idea_type === 'quiz' ? '❓' : '📚';
+        const date = new Date(idea.created_at).toLocaleDateString();
+        
+        html += `
+          <tr>
+            <td>${typeEmoji} ${idea.idea_type}</td>
+            <td><strong>${idea.title}</strong></td>
+            <td style="text-align: left; max-width: 300px;">${idea.description}</td>
+            <td>${idea.submitted_by}</td>
+            <td>${date}</td>
+          </tr>
+        `;
+      });
+
+      html += "</table>";
+      container.innerHTML = html;
+    }
+
+    // Load data on page load
+    loadTeachers();
+    loadIdeas();
+  </script>
+</body>
+</html>

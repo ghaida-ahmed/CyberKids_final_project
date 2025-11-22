@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Online Safety Quiz</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>❓ Online Safety Quiz</h1>
+  <p>Choose the correct answer to each question.</p>
+
+  <div id="quizContainer">
+    <p>1️⃣ Should you share your password with friends?</p>
+    <button class="quizAnswerBtn" data-correct="false">Yes</button>
+    <button class="quizAnswerBtn" data-correct="true">No</button>
+
+    <p>2️⃣ Is it safe to download files from unknown websites?</p>
+    <button class="quizAnswerBtn" data-correct="false">Yes</button>
+    <button class="quizAnswerBtn" data-correct="true">No</button>
+
+    <p>3️⃣ How can you identify phishing emails?</p>
+    <button class="quizAnswerBtn" data-correct="true">Check sender & links</button>
+    <button class="quizAnswerBtn" data-correct="false">Click all links to see</button>
+    <p id="quizMessage"></p>
+
+    <button id="quizFinishBtn">Finish Quiz</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const quizMessage = document.getElementById("quizMessage");
+    const quizFinishBtn = document.getElementById("quizFinishBtn");
+
+    document.querySelectorAll(".quizAnswerBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.correct === "true") {
+          quizMessage.textContent = "✅ Correct!";
+        } else {
+          quizMessage.textContent = "❌ Wrong answer!";
+        }
+      });
+    });
+
+    quizFinishBtn.addEventListener("click", async () => {
+      const email = localStorage.getItem("childEmail");
+      if (!email) return alert("No child email found!");
+
+      // 🧩 الخطوة 1: جلب آخر progress وpoints من قاعدة البيانات
+      const { data: childData, error } = await supabase
+        .from("children")
+        .select("progress, points")
+        .eq("email", email)
+        .single();
+
+      if (error || !childData) {
+        alert("Error fetching child data.");
+        console.error(error);
+        return;
+      }
+
+      // 🧩 الخطوة 2: زيادة القيم بشكل تراكمي
+      let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+      let currentPoints = childData.points || 0;
+
+      progress.quizzesCompleted += 1;
+      currentPoints += 20; // ✅ تراكمي
+
+      // 🧩 الخطوة 3: تحديث البيانات
+      const { error: updateError } = await supabase
+        .from("children")
+        .update({ progress, points: currentPoints })
+        .eq("email", email);
+
+      if (updateError) {
+        alert("Error updating quiz progress.");
+        console.error(updateError);
+        return;
+      }
+
+      alert("🎉 Great job! You earned 20 points!");
+      window.location.href = "childDashboard.html";
+    });
+  </script>
+</body>
+</html>

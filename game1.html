@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Click-the-Safe-Links</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .linkBtn { margin: 10px; padding: 10px; }
+    #gameContainer { display: none; }
+  </style>
+</head>
+<body>
+  <h1>🖱️ Click the Safe Links!</h1>
+  <p>Click only on safe links to protect yourself online.</p>
+
+  <div id="gameContainer">
+    <button class="linkBtn" data-safe="true">https://kids-safe.com</button>
+    <button class="linkBtn" data-safe="false">http://malware-download.com</button>
+    <button class="linkBtn" data-safe="true">https://school-portal.com</button>
+    <button class="linkBtn" data-safe="false">http://phishing-site.com</button>
+    <p id="game1Message"></p>
+    <button id="game1FinishBtn">Finish Game</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const game1Container = document.getElementById("gameContainer");
+    const game1Message = document.getElementById("game1Message");
+    const finishBtn = document.getElementById("game1FinishBtn");
+
+    // إظهار اللعبة مباشرة
+    game1Container.style.display = "block";
+
+    document.querySelectorAll(".linkBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const safe = btn.dataset.safe === "true";
+        if (safe) {
+          game1Message.textContent = "✅ Correct! Safe link clicked.";
+        } else {
+          game1Message.textContent = "⚠️ Unsafe link! Don't click!";
+        }
+      });
+    });
+
+    // زر إنهاء اللعبة
+    finishBtn.addEventListener("click", async () => {
+      const email = localStorage.getItem("childEmail");
+      if (!email) return alert("No child email found!");
+
+      // 🧩 الخطوة 1: جلب آخر progress وpoints من قاعدة البيانات
+      const { data: childData, error } = await supabase
+        .from("children")
+        .select("progress, points")
+        .eq("email", email)
+        .single();
+
+      if (error || !childData) {
+        alert("Error fetching child data.");
+        console.error(error);
+        return;
+      }
+
+      // 🧩 الخطوة 2: حساب القيم الجديدة تراكميًا
+      let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+      let currentPoints = childData.points || 0;
+
+      progress.gamesCompleted += 1;
+      currentPoints += 10; // ✅ نضيف 10 فوق النقاط القديمة
+
+      // 🧩 الخطوة 3: تحديث قاعدة البيانات
+      const { error: updateError } = await supabase
+        .from("children")
+        .update({ progress, points: currentPoints })
+        .eq("email", email);
+
+      if (updateError) {
+        alert("Error updating progress.");
+        console.error(updateError);
+        return;
+      }
+
+      alert("🎉 Great job! You earned 10 points!");
+      window.location.href = "childDashboard.html";
+    });
+  </script>
+</body>
+</html>

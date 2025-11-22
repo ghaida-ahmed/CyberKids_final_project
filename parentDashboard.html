@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Parent Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>👨‍👩‍👧 Parent Dashboard</h1>
+  <p>View your children's progress and manage their learning!</p>
+
+  <!-- 🔔 Notifications Section -->
+  <div id="notificationsSection" style="background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%); 
+       border-radius: 20px; padding: 20px; margin: 20px auto; max-width: 800px; 
+       box-shadow: 0 5px 15px rgba(0,0,0,0.1); display: none;">
+    <h2 style="color: #ff9500;">🔔 New Updates!</h2>
+    <div id="notificationsList"></div>
+    <button onclick="dismissNotifications()" style="background: #ff9500; margin-top: 10px;">
+      ✓ Mark as Read
+    </button>
+  </div>
+
+  <!-- First Child Progress -->
+  <div id="parentChild1Progress" style="margin: 20px auto; max-width: 600px;">
+    <h2>🧒 First Child</h2>
+    <div class="loading"></div>
+  </div>
+
+  <!-- Second Child Progress (if exists) -->
+  <div id="parentChild2Progress" style="margin: 20px auto; max-width: 600px; display: none;">
+    <h2>👶 Second Child</h2>
+    <div class="loading"></div>
+  </div>
+
+  <hr>
+  <h3>🎮 Set Daily Play Limit</h3>
+  <p>Select which child and set their daily play limit:</p>
+  
+  <select id="childSelector" style="padding: 10px; font-size: 16px; border-radius: 10px; margin: 10px;">
+    <option value="">Select Child</option>
+  </select>
+  
+  <input type="number" id="dailyLimitInput" min="1" max="20" placeholder="e.g. 3">
+  <button id="saveLimitBtn">Save Limit</button>
+  <p id="limitMessage"></p>
+
+  <hr>
+  <h3>📄 Export Progress Report</h3>
+  <p>Select child to download their progress report:</p>
+  
+  <select id="reportChildSelector" style="padding: 10px; font-size: 16px; border-radius: 10px; margin: 10px;">
+    <option value="">Select Child</option>
+  </select>
+  
+  <button id="downloadReportBtn">Download Progress PDF</button>
+
+  <!-- Supabase Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsPDF Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let childrenInfo = {}; // Store children data
+
+    // 🔔 Check for progress updates and show notifications
+    async function checkForProgressUpdates() {
+      const parentEmail = localStorage.getItem("parentEmail");
+      if (!parentEmail) return;
+
+      // ✅ Get last seen progress from DATABASE (not localStorage)
+      const { data: parentData, error: parentError } = await supabase
+        .from("parents")
+        .select("childEmail, childemail2, last_seen_progress")
+        .eq("email", parentEmail)
+        .single();
+
+      if (parentError || !parentData) return;
+
+      // Parse last_seen_progress (JSONB column)
+      const lastSeen = parentData.last_seen_progress || {};
+      let notifications = [];
+      let updatedLastSeen = { ...lastSeen };
+
+      // Check child 1
+      if (parentData.childEmail) {
+        const { data: child1 } = await supabase
+          .from("children")
+          .select("firstName, lastName, progress")
+          .eq("email", parentData.childEmail)
+          .single();
+
+        if (child1) {
+          const lastProgress = lastSeen[parentData.childEmail] || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+          const currentProgress = child1.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+
+          if (currentProgress.gamesCompleted > lastProgress.gamesCompleted) {
+            notifications.push(`🎮 ${child1.firstName} completed a new game! (Total: ${currentProgress.gamesCompleted})`);
+          }
+          if (currentProgress.quizzesCompleted > lastProgress.quizzesCompleted) {
+            notifications.push(`❓ ${child1.firstName} completed a new quiz! (Total: ${currentProgress.quizzesCompleted})`);
+          }
+          if (currentProgress.lessonsCompleted > lastProgress.lessonsCompleted) {
+            notifications.push(`📚 ${child1.firstName} completed a new lesson! (Total: ${currentProgress.lessonsCompleted})`);
+          }
+
+          updatedLastSeen[parentData.childEmail] = currentProgress;
+        }
+      }
+
+      // Check child 2
+      if (parentData.childemail2) {
+        const { data: child2 } = await supabase
+          .from("children")
+          .select("firstName, lastName, progress")
+          .eq("email", parentData.childemail2)
+          .single();
+
+        if (child2) {
+          const lastProgress = lastSeen[parentData.childemail2] || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+          const currentProgress = child2.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+
+          if (currentProgress.gamesCompleted > lastProgress.gamesCompleted) {
+            notifications.push(`🎮 ${child2.firstName} completed a new game! (Total: ${currentProgress.gamesCompleted})`);
+          }
+          if (currentProgress.quizzesCompleted > lastProgress.quizzesCompleted) {
+            notifications.push(`❓ ${child2.firstName} completed a new quiz! (Total: ${currentProgress.quizzesCompleted})`);
+          }
+          if (currentProgress.lessonsCompleted > lastProgress.lessonsCompleted) {
+            notifications.push(`📚 ${child2.firstName} completed a new lesson! (Total: ${currentProgress.lessonsCompleted})`);
+          }
+
+          updatedLastSeen[parentData.childemail2] = currentProgress;
+        }
+      }
+
+      // ✅ Save updated last seen to DATABASE
+      await supabase
+        .from("parents")
+        .update({ last_seen_progress: updatedLastSeen })
+        .eq("email", parentEmail);
+
+      // Display notifications
+      if (notifications.length > 0) {
+        const notifSection = document.getElementById("notificationsSection");
+        const notifList = document.getElementById("notificationsList");
+        
+        notifSection.style.display = "block";
+        notifList.innerHTML = notifications.map(n => `<p style="margin: 10px 0; font-size: 18px;">✨ ${n}</p>`).join('');
+
+        // Also show popup alert
+        alert("🎉 New Progress Updates!\n\n" + notifications.join('\n'));
+      }
+    }
+
+    // Function to dismiss notifications
+    window.dismissNotifications = function() {
+      document.getElementById("notificationsSection").style.display = "none";
+    };
+
+    async function loadChildrenProgress() {
+      const parentEmail = localStorage.getItem("parentEmail");
+      if (!parentEmail) {
+        alert("No parent logged in!");
+        window.location.href = "index.html";
+        return;
+      }
+
+      // Get parent data
+      const { data: parentData, error: parentError } = await supabase
+        .from("parents")
+        .select("childEmail, childemail2, childAge, childage2, dailylimit")
+        .eq("email", parentEmail)
+        .single();
+
+      if (parentError || !parentData) {
+        document.getElementById("parentChild1Progress").innerHTML = 
+          "<p style='color: red;'>Error loading parent data!</p>";
+        return;
+      }
+
+      // Load First Child
+      if (parentData.childEmail) {
+        await loadChildData(parentData.childEmail, 1);
+        populateSelectors(parentData.childEmail, 1);
+      }
+
+      // Load Second Child (if exists)
+      if (parentData.childemail2) {
+        document.getElementById("parentChild2Progress").style.display = "block";
+        await loadChildData(parentData.childemail2, 2);
+        populateSelectors(parentData.childemail2, 2);
+      }
+    }
+
+    async function loadChildData(childEmail, childNumber) {
+      const { data: childData, error: childError } = await supabase
+        .from("children")
+        .select("firstName, lastName, email, age, progress, points")
+        .eq("email", childEmail)
+        .single();
+
+      const container = document.getElementById(`parentChild${childNumber}Progress`);
+
+      if (childError || !childData) {
+        container.innerHTML = `<p style='color: red;'>Error loading child ${childNumber} data!</p>`;
+        return;
+      }
+
+      const progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+
+      // Store child info
+      childrenInfo[childEmail] = {
+        name: `${childData.firstName} ${childData.lastName}`,
+        email: childEmail,
+        age: childData.age,
+        games: progress.gamesCompleted,
+        quizzes: progress.quizzesCompleted,
+        lessons: progress.lessonsCompleted,
+        points: childData.points || 0
+      };
+
+      // Display child progress
+      container.innerHTML = `
+        <div style="background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%); 
+                    border-radius: 20px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+          <h2 style="color: #ff6b6b;">👤 ${childrenInfo[childEmail].name}</h2>
+          <p><strong>Age:</strong> ${childrenInfo[childEmail].age}</p>
+          <p><strong>Email:</strong> ${childEmail}</p>
+          <p><strong>🎮 Games Completed:</strong> ${childrenInfo[childEmail].games}</p>
+          <p><strong>❓ Quizzes Completed:</strong> ${childrenInfo[childEmail].quizzes}</p>
+          <p><strong>📚 Lessons Completed:</strong> ${childrenInfo[childEmail].lessons}</p>
+          <p><strong>⭐ Total Points:</strong> ${childrenInfo[childEmail].points}</p>
+        </div>
+      `;
+    }
+
+    function populateSelectors(childEmail, childNumber) {
+      const info = childrenInfo[childEmail];
+      
+      // Add to child selector for daily limit
+      const childSelector = document.getElementById("childSelector");
+      const option1 = document.createElement("option");
+      option1.value = childEmail;
+      option1.textContent = `${info.name} (Child ${childNumber})`;
+      childSelector.appendChild(option1);
+
+      // Add to report selector
+      const reportSelector = document.getElementById("reportChildSelector");
+      const option2 = document.createElement("option");
+      option2.value = childEmail;
+      option2.textContent = `${info.name} (Child ${childNumber})`;
+      reportSelector.appendChild(option2);
+    }
+
+    // Save Daily Limit
+    document.getElementById("saveLimitBtn").addEventListener("click", async () => {
+      const parentEmail = localStorage.getItem("parentEmail");
+      const selectedChild = document.getElementById("childSelector").value;
+      const limit = parseInt(document.getElementById("dailyLimitInput").value);
+
+      if (!selectedChild) {
+        alert("Please select a child!");
+        return;
+      }
+
+      if (!limit || limit <= 0) {
+        alert("Please enter a valid number.");
+        return;
+      }
+
+      // Note: Current database structure stores dailylimit for parent, not per child
+      // You may need to modify database to store limits per child
+      const { error } = await supabase
+        .from("parents")
+        .update({ dailylimit: limit })
+        .eq("email", parentEmail);
+
+      if (error) {
+        alert("❌ Error saving limit.");
+        console.error(error);
+      } else {
+        document.getElementById("limitMessage").textContent = 
+          `✅ Daily limit set to ${limit} plays for ${childrenInfo[selectedChild].name}`;
+      }
+    });
+
+    // Download PDF Report
+    document.getElementById("downloadReportBtn").addEventListener("click", () => {
+      const selectedChild = document.getElementById("reportChildSelector").value;
+      
+      if (!selectedChild) {
+        alert("Please select a child!");
+        return;
+      }
+
+      const childInfo = childrenInfo[selectedChild];
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const today = new Date().toISOString().split("T")[0];
+
+      // Title
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text("Cyber Kids Academy", 70, 20);
+
+      // Line
+      doc.setDrawColor(255, 107, 107);
+      doc.setLineWidth(1);
+      doc.line(20, 25, 190, 25);
+
+      // Details
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Child Name: ${childInfo.name}`, 20, 40);
+      doc.text(`Age: ${childInfo.age}`, 20, 50);
+      doc.text(`Email: ${childInfo.email}`, 20, 60);
+      doc.text(`Date: ${today}`, 20, 70);
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Progress Summary:", 20, 90);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`Games Completed: ${childInfo.games}`, 25, 100);
+      doc.text(`Quizzes Completed: ${childInfo.quizzes}`, 25, 110);
+      doc.text(`Lessons Completed: ${childInfo.lessons}`, 25, 120);
+      doc.text(`Total Points: ${childInfo.points}`, 25, 130);
+
+      // Footer
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text("Generated by Cyber Kids Academy", 20, 150);
+
+      doc.save(`${childInfo.name.replace(/\s+/g, "_")}_Progress_Report.pdf`);
+    });
+
+    // Load data and check for notifications
+    loadChildrenProgress().then(() => {
+      checkForProgressUpdates();
+    });
+
+    // Auto-refresh notifications every 30 seconds
+    setInterval(() => {
+      checkForProgressUpdates();
+    }, 30000);
+  </script>
+</body>
+</html>

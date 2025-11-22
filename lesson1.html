@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Staying Safe Online</title>
+  <style>
+    body {
+      font-family: 'Comic Sans MS', sans-serif;
+      background: #f0f9ff;
+      color: #333;
+      text-align: center;
+      padding: 20px;
+    }
+    h2 {
+      color: #0077b6;
+    }
+    .lesson-box {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin: 20px auto;
+      width: 85%;
+      text-align: left;
+    }
+    li {
+      margin: 10px 0;
+      font-size: 17px;
+    }
+    span.key {
+      color: #0077b6;
+      font-weight: bold;
+    }
+    button {
+      background: #0077b6;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      margin-top: 15px;
+    }
+    button:hover {
+      background: #005b8a;
+    }
+  </style>
+</head>
+<body>
+  <h2>🌐 Staying Safe Online</h2>
+  <p>Let’s learn some easy tips to stay safe while using the internet!</p>
+
+  <div class="lesson-box">
+    <ul>
+      <li>🔒 <span class="key">Never share</span> your full name, address, or school online — keep it private!</li>
+      <li>👨‍👩‍👧 Always <span class="key">ask a parent or teacher</span> before downloading a game or opening a link.</li>
+      <li>🚫 If a message or picture makes you feel <span class="key">uncomfortable</span>, tell an adult right away.</li>
+      <li>💬 Be <span class="key">kind and respectful</span> when chatting or commenting online.</li>
+      <li>🎮 Only play <span class="key">age-appropriate games</span> — check for “+7” or “+12” signs.</li>
+      <li>📱 Remember: what you post online <span class="key">stays forever</span> — so always think before posting.</li>
+      <li>💡 When unsure, <span class="key">STOP, THINK, ASK!</span></li>
+    </ul>
+  </div>
+
+  <p style="font-weight:bold; color:#0077b6;">
+    Great job! You're learning how to be a smart and safe cyber kid! 💙
+  </p>
+
+  <button onclick="completeLesson()">✅ Mark Lesson as Completed</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function completeLesson() {
+  const email = localStorage.getItem("childEmail");
+  if (!email) return;
+
+  const { data: childData, error } = await supabase
+    .from("children")
+    .select("progress, points")
+    .eq("email", email)
+    .single();
+
+  if (error) {
+    console.error(error);
+    alert("Error loading progress.");
+    return;
+  }
+
+  let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+  let currentPoints = childData.points || 0;
+
+  progress.lessonsCompleted += 1;
+  currentPoints += 30;
+
+  await supabase
+    .from("children")
+    .update({ progress, points: currentPoints })
+    .eq("email", email);
+
+  alert("🎉 Great job! You earned 30 points!");
+  window.location.href = "childDashboard.html";
+}
+  </script>
+</body>
+</html>

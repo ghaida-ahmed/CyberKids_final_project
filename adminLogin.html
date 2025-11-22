@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🔐 Admin Login</h1>
+  <p>Please enter your admin credentials</p>
+  
+  <form id="adminLoginForm">
+    <input type="email" id="adminEmail" placeholder="Admin Email" required>
+    <input type="password" id="adminPassword" placeholder="Admin Password" required>
+    <button type="submit">Login</button>
+    <button type="button" onclick="window.location.href='index.html'">⬅️ Back to Home</button>
+  </form>
+  
+  <p id="loginMessage" style="color:red; font-weight: bold;"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const form = document.getElementById("adminLoginForm");
+    const msg = document.getElementById("loginMessage");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "";
+
+      const email = document.getElementById("adminEmail").value.trim().toLowerCase();
+      const password = document.getElementById("adminPassword").value.trim();
+
+      if (!email || !password) {
+        msg.textContent = "Please enter both email and password.";
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("admins")
+          .select("*")
+          .eq("email", email);
+
+        if (error) {
+          msg.textContent = "Error querying database. Check console.";
+          console.error("Supabase error:", error);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          msg.textContent = "Invalid admin credentials.";
+          return;
+        }
+
+        const admin = data[0];
+
+        if (admin.password !== password) {
+          msg.textContent = "Invalid admin credentials.";
+          return;
+        }
+
+        // Success
+        localStorage.setItem("adminEmail", email);
+        window.location.href = "adminDashboard.html";
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        msg.textContent = "Unexpected error. Check console.";
+      }
+    });
+  </script>
+</body>
+</html>

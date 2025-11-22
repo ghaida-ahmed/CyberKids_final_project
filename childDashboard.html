@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Child Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🎮 Child Dashboard</h1>
+  <p id="welcomeChild">Loading...</p>
+  <p id="progressChild">Progress: Loading...</p>
+  <p>Select a game or quiz to play and learn about online safety!</p>
+
+  <div id="childGames">
+    <button id="game1Btn">Game 1 🧩</button>
+    <button id="game2Btn">Game 2 🧩</button>
+    <button id="game3Btn">Game 3 🧩</button>
+    <button id="quiz1Btn">Quiz 1 ❓</button>
+  </div>
+
+  <hr>
+  <h3>🆕 New from Your Teacher</h3>
+  <div id="teacherActivities"></div>
+
+  <div id="progress">
+    <p>Games completed: <span id="gamesCompleted">0</span></p>
+    <p>Quizzes completed: <span id="quizzesCompleted">0</span></p>
+    <p>Lessons completed: <span id="lessonsCompleted">0</span></p>
+  </div>
+  <p>Points: <span id="childPoints">0</span></p>
+
+  <!-- 🏆 Leaderboard Section -->
+  <button id="showLeaderboardBtn">🏆 View Leaderboard</button>
+  <div id="leaderboardContainer" style="display:none; margin-top:20px;"></div>
+
+  <!-- Supabase Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadChild() {
+      const email = localStorage.getItem("childEmail");
+      if (!email) return;
+      const { data, error } = await supabase
+        .from("children")
+        .select("*")
+        .eq("email", email)
+        .single();
+      if (error) {
+        document.getElementById("welcomeChild").textContent = "Error loading data";
+      } else {
+        document.getElementById("welcomeChild").textContent = `Welcome, ${data.firstName} ${data.lastName}!`;
+        const progress = data.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+        document.getElementById("gamesCompleted").textContent = progress.gamesCompleted;
+        document.getElementById("quizzesCompleted").textContent = progress.quizzesCompleted;
+        document.getElementById("lessonsCompleted").textContent = progress.lessonsCompleted || 0;
+        document.getElementById("childPoints").textContent = data.points || 0;
+      }
+    }
+    loadChild();
+
+    async function loadTeacherActivities() {
+      const { data, error } = await supabase
+        .from("content_library")
+        .select("title, type, filename")
+        .eq("isvisible", true);
+      if (error) return console.error(error);
+      let html = "";
+      if (!data || data.length === 0) {
+        html = "<p>No new activities available right now.</p>";
+      } else {
+        html = "<p>🎉 Your teacher added new activities! Check them out:</p>";
+        data.forEach(item => {
+          html += `
+            <div class="activity-card">
+              <strong>${item.title}</strong> (${item.type})
+              <br>
+              <button onclick="window.location.href='/${item.filename}'">Open</button>
+            </div><br>`;
+        });
+      }
+      document.getElementById("teacherActivities").innerHTML = html;
+    }
+    loadTeacherActivities();
+
+    async function canPlayToday() {
+      const childEmail = localStorage.getItem("childEmail");
+      if (!childEmail) return true;
+      const { data: parent, error: parentError } = await supabase
+        .from("parents")
+        .select("dailylimit")
+        .eq("childEmail", childEmail)
+        .single();
+      if (parentError || !parent) return true;
+      const dailyLimit = parent.dailylimit || null;
+      if (!dailyLimit) return true;
+      const today = new Date().toISOString().split("T")[0];
+      const { data: plays, error: playError } = await supabase
+        .from("play_logs")
+        .select("*")
+        .eq("childEmail", childEmail)
+        .eq("date", today);
+      if (playError) return true;
+      const playCount = plays ? plays.length : 0;
+      return playCount < dailyLimit;
+    }
+
+    async function logPlayActivity() {
+      const childEmail = localStorage.getItem("childEmail");
+      const today = new Date().toISOString().split("T")[0];
+      await supabase.from("play_logs").insert([{ childEmail, date: today }]);
+    }
+
+    async function handlePlayNavigation(url) {
+      const allowed = await canPlayToday();
+      if (!allowed) {
+        // Get the daily limit to show in message
+        const childEmail = localStorage.getItem("childEmail");
+        const { data: parent } = await supabase
+          .from("parents")
+          .select("dailylimit")
+          .eq("childEmail", childEmail)
+          .single();
+        
+        const limit = parent?.dailylimit || 0;
+        
+        alert(
+          "🚫 Daily Play Limit Reached!\n\n" +
+          "Your parent has limited you to " + limit + " game" + (limit > 1 ? "s" : "") + " per day.\n\n" +
+          "You've already played " + limit + " game" + (limit > 1 ? "s" : "") + " today.\n\n" +
+          "Try again tomorrow! 🌙"
+        );
+        return;
+      }
+      await logPlayActivity();
+      window.location.href = url;
+    }
+
+    // ✅ الألعاب (تُفحص)
+    document.getElementById("game1Btn").addEventListener("click", () => handlePlayNavigation("game1.html"));
+    document.getElementById("game2Btn").addEventListener("click", () => handlePlayNavigation("game2.html"));
+    document.getElementById("game3Btn").addEventListener("click", () => handlePlayNavigation("game3.html"));
+
+    // ✅ الكويز (ما يتأثر بالحد)
+    document.getElementById("quiz1Btn").addEventListener("click", () => {
+      window.location.href = "quiz1.html";
+    });
+
+    // ✅ عرض رسالة الحد المسموح
+    async function showPlayLimitMessage() {
+      const childEmail = localStorage.getItem("childEmail");
+      if (!childEmail) return;
+      const { data: parent, error } = await supabase
+        .from("parents")
+        .select("dailylimit")
+        .eq("childEmail", childEmail)
+        .single();
+      if (error || !parent || !parent.dailylimit) return;
+      const limit = parent.dailylimit;
+      const shownTodayKey = `shownLimit_${new Date().toISOString().split("T")[0]}`;
+      if (localStorage.getItem(shownTodayKey)) return;
+      alert(`🎮 Your parent has allowed you to play ${limit} game${limit > 1 ? "s" : ""} today!`);
+      localStorage.setItem(shownTodayKey, "true");
+    }
+    showPlayLimitMessage();
+
+    // 🏆 ليدر بورد
+    document.getElementById("showLeaderboardBtn").addEventListener("click", async () => {
+      const container = document.getElementById("leaderboardContainer");
+      container.style.display = "block";
+      container.innerHTML = "<p>Loading leaderboard...</p>";
+      const { data, error } = await supabase
+        .from("children")
+        .select("firstName, lastName, points")
+        .order("points", { ascending: false });
+      if (error) {
+        container.innerHTML = "❌ Error loading leaderboard.";
+        return;
+      }
+      let tableHTML = `
+        <h3>🏅 Top Students</h3>
+        <table border="1" style="margin:auto;border-collapse:collapse;width:70%;box-shadow:0 0 10px rgba(0,0,0,0.1);">
+          <tr style="background-color:#0077b6;color:white;">
+            <th>Name</th><th>Points</th></tr>`;
+      data.forEach(child => {
+        tableHTML += `
+          <tr style="text-align:center;background-color:${child.points > 0 ? '#f1faff':'#fff'};">
+            <td>${child.firstName} ${child.lastName}</td>
+            <td>${child.points || 0}</td></tr>`;
+      });
+      tableHTML += "</table>";
+      container.innerHTML = tableHTML;
+    });
+  </script>
+</body>
+</html>

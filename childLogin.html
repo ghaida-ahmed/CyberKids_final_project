@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Child Login</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🎮 Child Login</h1>
+  <form id="childLoginForm">
+    <input type="email" id="loginEmail" placeholder="Email" required>
+    <input type="password" id="loginPassword" placeholder="Password" required>
+    <button type="submit">Login</button>
+    <button type="button" onclick="window.location.href='index.html'">⬅️ Back</button>
+
+  </form>
+
+  <p id="loginError" style="color:red;"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo"; 
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const loginForm = document.getElementById("childLoginForm");
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+
+      const { data, error } = await supabase
+        .from("children")
+        .select("*")
+        .eq("email", email)
+        .eq("email", email)
+        .single();
+
+      if (error || !data) {
+      document.getElementById("loginError").textContent = "Invalid email or password!";
+      return;
+    }
+
+  
+    if (data.password !== password) {
+      document.getElementById("loginError").textContent = "Invalid email or password!";
+      return;
+    }
+
+  
+    localStorage.setItem("childEmail", email);
+        window.location.href = "childDashboard.html";
+      
+    });
+  </script>
+</body>
+</html>

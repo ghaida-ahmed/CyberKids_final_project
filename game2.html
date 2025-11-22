@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Password Strength Challenge</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🔐 Password Strength Challenge</h1>
+  <p>Choose if the password is strong or weak.</p>
+
+  <div id="game2Container">
+    <p id="passwordDisplay"></p>
+    <button id="strongBtn">Strong</button>
+    <button id="weakBtn">Weak</button>
+    <p id="game2Message"></p>
+    <button id="game2FinishBtn">Finish Game</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const passwordDisplay = document.getElementById("passwordDisplay");
+    const game2Message = document.getElementById("game2Message");
+    const finishBtn = document.getElementById("game2FinishBtn");
+
+    const passwords = [
+      { pw: "12345", strong: false },
+      { pw: "MySafeP@ss123", strong: true },
+      { pw: "password", strong: false },
+      { pw: "C0mpl3xP@ss!", strong: true }
+    ];
+
+    const selected = passwords[Math.floor(Math.random() * passwords.length)];
+    passwordDisplay.textContent = selected.pw;
+
+    function checkAnswer(answer) {
+      if (answer === selected.strong) {
+        game2Message.textContent = "✅ Correct!";
+      } else {
+        game2Message.textContent = "❌ Wrong! This password is " + (selected.strong ? "strong" : "weak");
+      }
+    }
+
+    document.getElementById("strongBtn").addEventListener("click", () => checkAnswer(true));
+    document.getElementById("weakBtn").addEventListener("click", () => checkAnswer(false));
+
+    finishBtn.addEventListener("click", async () => {
+      const email = localStorage.getItem("childEmail");
+      if (!email) return alert("No child email found!");
+
+      // 🧩 الخطوة 1: جلب آخر progress وpoints من قاعدة البيانات
+      const { data: childData, error } = await supabase
+        .from("children")
+        .select("progress, points")
+        .eq("email", email)
+        .single();
+
+      if (error || !childData) {
+        alert("Error fetching child data.");
+        console.error(error);
+        return;
+      }
+
+      // 🧩 الخطوة 2: تعديل progress والنقاط بشكل تراكمي
+      let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
+      let currentPoints = childData.points || 0;
+
+      progress.gamesCompleted += 1;
+      currentPoints += 10; // ✅ تراكميًا
+
+      // 🧩 الخطوة 3: تحديث البيانات في Supabase
+      const { error: updateError } = await supabase
+        .from("children")
+        .update({ progress, points: currentPoints })
+        .eq("email", email);
+
+      if (updateError) {
+        alert("Error updating progress.");
+        console.error(updateError);
+        return;
+      }
+
+      alert("🎉 Great job! You earned 10 points!");
+      window.location.href = "childDashboard.html";
+    });
+  </script>
+</body>
+</html>
