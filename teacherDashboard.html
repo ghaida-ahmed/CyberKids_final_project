@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Teacher Dashboard</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -19,28 +20,25 @@
   <div id="teacherLeaderboardContainer" style="display:none; margin-top:20px;"></div>
 
   <!-- Supabase Library -->
+  <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // 🧩 تحقق من أن المعلم مسجّل الدخول
+    // Require a teacher session before loading dashboard data.
     const teacherEmail = localStorage.getItem("teacherEmail");
     if (!teacherEmail) {
       alert("Access denied! Please login first.");
       window.location.href = "teacherLogin.html";
     }
 
-    // 🔓 زر تسجيل الخروج
     function logout() {
       localStorage.removeItem("teacherEmail");
       window.location.href = "teacherLogin.html";
     }
 
-    // ⚙️ إعداد Supabase
-    const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CYBERKIDS_CONFIG;
+    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // 📋 تحميل بيانات الطلاب
     async function loadAllChildren() {
       const { data, error } = await supabase
         .from("children")
@@ -59,7 +57,6 @@
         return;
       }
 
-      // إنشاء جدول البيانات
       let tableHTML = `
         <table border="1" style="margin:auto; border-collapse:collapse;">
           <tr>
@@ -94,7 +91,6 @@
 
     loadAllChildren();
 
-    // 🏆 عرض الليدر بورد عند المعلم
     document.getElementById("showTeacherLeaderboard").addEventListener("click", async () => {
       const container = document.getElementById("teacherLeaderboardContainer");
       container.style.display = "block";
@@ -155,17 +151,15 @@
 
       if (error) return console.error(error);
 
-      // تعبئة القائمة المنسدلة
       const dropdown = document.getElementById("contentSelect");
       dropdown.innerHTML = "";
       data.forEach(item => {
         const opt = document.createElement("option");
         opt.value = item.id;
-        opt.textContent = `${item.title} (${item.type}) ${item.isVisible ? '✅' : '🚫'}`;
+        opt.textContent = `${item.title} (${item.type}) ${item.isvisible ? '✅' : '🚫'}`;
         dropdown.appendChild(opt);
       });
 
-      // عرض جدول الحالة
       let tableHTML = `
         <table border="1" style="margin:auto;border-collapse:collapse;">
           <tr><th>Title</th><th>Type</th><th>Status</th></tr>`;

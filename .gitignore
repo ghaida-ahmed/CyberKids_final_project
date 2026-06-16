@@ -1,0 +1,21 @@
+# Local backend configuration
+config.js
+.env
+.env.*
+
+# macOS metadata
+.DS_Store
+
+# Editor and system files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and temporary files
+*.log
+tmp/
+temp/
+
+# Generated reports
+*_Progress_Report.pdf

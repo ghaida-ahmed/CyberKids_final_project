@@ -35,9 +35,10 @@ CREATE TABLE IF NOT EXISTS admins (
 -- إضافة تعليق للجدول
 COMMENT ON TABLE admins IS 'Administrator accounts for managing the platform';
 
--- إضافة حساب أدمن افتراضي (غيّر الباسورد بعدين!)
+-- Add an initial admin account.
+-- Replace these placeholders before running the script in Supabase.
 INSERT INTO admins (email, password) 
-VALUES ('admin@cyberkids.com', 'Admin@123')
+VALUES ('your-admin-email@example.com', 'replace-with-a-strong-password')
 ON CONFLICT (email) DO NOTHING;
 
 -- ================================================================
@@ -125,9 +126,9 @@ LEFT JOIN children c2 ON p.childEmail2 = c2.email;
 -- إضافة أفكار تجريبية
 INSERT INTO game_ideas (idea_type, title, description, submitted_by, status)
 VALUES 
-  ('game', 'Social Media Safety Game', 'A game that teaches children about privacy settings and what to share online. Players navigate through different social media scenarios and make decisions about what information is safe to share.', 'admin@cyberkids.com', 'pending'),
-  ('quiz', 'Password Security Quiz', 'An interactive quiz that tests children understanding of strong passwords, two-factor authentication, and password management best practices.', 'admin@cyberkids.com', 'pending'),
-  ('lesson', 'Cyberbullying Awareness', 'A lesson that teaches children about cyberbullying, how to recognize it, and what steps to take if they encounter it online.', 'admin@cyberkids.com', 'pending')
+  ('game', 'Social Media Safety Game', 'A game that teaches children about privacy settings and what to share online. Players navigate through different social media scenarios and make decisions about what information is safe to share.', 'your-admin-email@example.com', 'pending'),
+  ('quiz', 'Password Security Quiz', 'An interactive quiz that tests children understanding of strong passwords, two-factor authentication, and password management best practices.', 'your-admin-email@example.com', 'pending'),
+  ('lesson', 'Cyberbullying Awareness', 'A lesson that teaches children about cyberbullying, how to recognize it, and what steps to take if they encounter it online.', 'your-admin-email@example.com', 'pending')
 ON CONFLICT DO NOTHING;
 
 -- ================================================================
@@ -220,7 +221,7 @@ GROUP BY idea_type;
 -- ================================================================
 
 -- ملاحظات مهمة:
--- 1. تأكد من تغيير باسورد الأدمن الافتراضي
+-- 1. Replace the admin email and password placeholders before running this script
 -- 2. في الإنتاج، فعّل RLS مع سياسات أمان مناسبة
 -- 3. احفظ نسخة احتياطية من قاعدة البيانات قبل التنفيذ
 -- 4. اختبر جميع الميزات بعد التعديلات

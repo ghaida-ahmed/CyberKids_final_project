@@ -1,8 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Initialize Supabase
-  const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    var { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CYBERKIDS_CONFIG;
+    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // DOM Elements
   const childBtn = document.getElementById('childBtn');
@@ -129,8 +128,6 @@ document.addEventListener("DOMContentLoaded", () => {
       parentData.childemail2 = childEmail2;  // ✅ lowercase
       parentData.childage2 = parseInt(childAge2);  // ✅ lowercase
     }
-
-    console.log("Attempting to insert parent data:", parentData);
 
     const { data, error } = await supabase.from("parents").insert([parentData]);
 

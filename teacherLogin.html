@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Teacher Login</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -16,11 +17,11 @@
   </form>
   <p id="loginMessage" style="color:red;"></p>
 
+  <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://awgrbkqpooyvaopydaic.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Z3Jia3Fwb295dmFvcHlkYWljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjExNTQ5MjIsImV4cCI6MjA3NjczMDkyMn0.my5SzWCKrtcyGKHItsEq8xW__NsAVaPALdFyGYWSWjo";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    var { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CYBERKIDS_CONFIG;
+    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const form = document.getElementById("teacherLoginForm");
   const msg = document.getElementById("loginMessage");
@@ -29,7 +30,6 @@
     e.preventDefault();
     msg.textContent = "";
 
-    // اقرأ القيم وازيل الفراغات
     const email = document.getElementById("teacherEmail").value.trim();
     const password = document.getElementById("teacherPassword").value.trim();
 
@@ -39,19 +39,12 @@
     }
 
     try {
-      // اطبع لمعرفة القيم اللي ترسل
-      console.log("Attempt login for:", email);
-
-      // استعلام الصف من جدول teachers
       const { data, error, status } = await supabase
         .from("teachers")
         .select("*")
         .eq("email", email);
 
-      console.log("supabase response:", { data, error, status });
-
       if (error) {
-        // لو في خطأ من Supabase (مثلاً سياسة RLS تمنع القراءة) نعرض رسالة واضحة
         msg.textContent = "Error querying database. Check console for details.";
         console.error("Supabase error:", error);
         return;
@@ -70,13 +63,11 @@
 
       const teacher = data[0];
 
-      // قارن الباسورد (مؤقت - لو مش مشفر)
       if (teacher.password !== password) {
         msg.textContent = "Invalid email or password.";
         return;
       }
 
-      // نجاح تسجيل الدخول
       localStorage.setItem("teacherEmail", email);
       window.location.href = "teacherDashboard.html";
     } catch (err) {
