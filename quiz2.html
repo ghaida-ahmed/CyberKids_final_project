@@ -4,52 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Safe Online Choices Quiz</title>
-  <style>
-    body {
-      font-family: 'Comic Sans MS', sans-serif;
-      background: #f0f9ff;
-      text-align: center;
-      color: #333;
-      padding: 20px;
-    }
-    h2 {
-      color: #0077b6;
-    }
-    .question {
-      background: #fff;
-      border-radius: 10px;
-      padding: 15px;
-      margin: 15px auto;
-      width: 85%;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
-    }
-    button {
-      margin: 10px;
-      padding: 8px 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background-color: #0096c7;
-      color: white;
-      font-size: 15px;
-    }
-    button:hover {
-      background-color: #0077b6;
-    }
-    #msg {
-      font-weight: bold;
-      color: #333;
-      margin-top: 15px;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h2>🧠 Safe Online Choices</h2>
+  <h1>Safe Online Choices</h1>
   <p>Answer these questions to see how safely you surf online!</p>
 
   <form id="quizForm">
     <div class="question">
-      <p>1️⃣ If your mom tells you not to visit a website, what should you do?</p>
+      <p>If your mom tells you not to visit a website, what should you do?</p>
       <label><input type="radio" name="q1" data-correct> Don’t visit it</label><br>
       <label><input type="radio" name="q1"> Visit it secretly</label><br>
       <label><input type="radio" name="q1"> Ask a friend to check it</label>
@@ -80,7 +43,7 @@
   </form>
 
   <p id="msg"></p>
-  <button onclick="window.history.back()">⬅ Back to Dashboard</button>
+  <button onclick="window.history.back()">Back to Dashboard</button>
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -100,14 +63,16 @@
   const score = countCorrect();
   const msg = document.getElementById("msg");
 
-  if (score === 4) msg.textContent = "🎉 Excellent! You make safe online choices!";
-  else if (score === 3) msg.textContent = "👍 Good job! Just be careful with links.";
-  else if (score === 2) msg.textContent = "🙂 Not bad! Review the safety rules again.";
-  else msg.textContent = "⚠️ Be careful online! Talk to a parent about what’s safe.";
+  if (score === 4) msg.textContent = "Excellent. You make safe online choices.";
+  else if (score === 3) msg.textContent = "Good job. Just be careful with links.";
+  else if (score === 2) msg.textContent = "Not bad. Review the safety rules again.";
+  else msg.textContent = "Be careful online. Talk to a parent about what is safe.";
 
-  // ✅ نحدث النقاط والعدادات
-  const email = localStorage.getItem("childEmail");
+  // Update points and counters.
+  const { data: { user } } = await supabase.auth.getUser();
+  const email = user?.email?.toLowerCase();
   if (!email) return;
+  localStorage.setItem("childEmail", email);
 
   const { data: childData, error } = await supabase
     .from("children")
@@ -131,8 +96,10 @@
     .update({ progress, points: currentPoints })
     .eq("email", email);
 
-  alert("✅ You earned 20 points!");
+  alert("You earned 20 points.");
 }
   </script>
+  <script src="appShell.js?v=1"></script>
+
 </body>
 </html>

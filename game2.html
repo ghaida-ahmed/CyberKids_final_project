@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Password Strength Challenge</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h1>🔐 Password Strength Challenge</h1>
+  <h1>Password Strength Challenge</h1>
   <p>Choose if the password is strong or weak.</p>
 
   <div id="game2Container">
@@ -40,9 +40,9 @@
 
     function checkAnswer(answer) {
       if (answer === selected.strong) {
-        game2Message.textContent = "✅ Correct!";
+        game2Message.textContent = "Correct.";
       } else {
-        game2Message.textContent = "❌ Wrong! This password is " + (selected.strong ? "strong" : "weak");
+        game2Message.textContent = "Try again. This password is " + (selected.strong ? "strong" : "weak");
       }
     }
 
@@ -50,10 +50,12 @@
     document.getElementById("weakBtn").addEventListener("click", () => checkAnswer(false));
 
     finishBtn.addEventListener("click", async () => {
-      const email = localStorage.getItem("childEmail");
+      const { data: { user } } = await supabase.auth.getUser();
+      const email = user?.email?.toLowerCase();
       if (!email) return alert("No child email found!");
+      localStorage.setItem("childEmail", email);
 
-      // 🧩 الخطوة 1: جلب آخر progress وpoints من قاعدة البيانات
+      // Get the latest progress and points.
       const { data: childData, error } = await supabase
         .from("children")
         .select("progress, points")
@@ -66,14 +68,14 @@
         return;
       }
 
-      // 🧩 الخطوة 2: تعديل progress والنقاط بشكل تراكمي
+      // Add the new progress values.
       let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
       let currentPoints = childData.points || 0;
 
       progress.gamesCompleted += 1;
-      currentPoints += 10; // ✅ تراكميًا
+      currentPoints += 10;
 
-      // 🧩 الخطوة 3: تحديث البيانات في Supabase
+      // Save progress.
       const { error: updateError } = await supabase
         .from("children")
         .update({ progress, points: currentPoints })
@@ -85,9 +87,11 @@
         return;
       }
 
-      alert("🎉 Great job! You earned 10 points!");
+      alert("Great job. You earned 10 points.");
       window.location.href = "childDashboard.html";
     });
   </script>
+  <script src="appShell.js?v=1"></script>
+
 </body>
 </html>

@@ -1,363 +1,543 @@
-/* ============ General Layout ============ */
+:root {
+  --ink: #263047;
+  --muted: #745d6f;
+  --panel: rgba(255, 249, 252, 0.93);
+  --panel-solid: #fff9fc;
+  --line: #f3dce8;
+  --pink: #f8b8d0;
+  --pink-deep: #e884aa;
+  --pink-soft: #fff0f6;
+  --teal: #29b6b1;
+  --coral: #ff7c7c;
+  --yellow: #ffd166;
+  --mint: #9ee6c8;
+  --blue: #75b8ff;
+  --lavender: #b9a7ff;
+  --shadow: 0 18px 45px rgba(78, 103, 148, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  font-family: 'Comic Sans MS', 'Poppins', sans-serif;
-  background: linear-gradient(135deg, #a8e6cf 0%, #ffd3a5 50%, #ffa8a8 100%);
-  text-align: center;
-  margin: 0;
-  padding: 30px;
-  color: #333;
   min-height: 100vh;
+  margin: 0;
+  padding: 0 18px 34px;
+  font-family: Inter, "Trebuchet MS", Arial, sans-serif;
+  color: var(--ink);
+  text-align: center;
+  background:
+    linear-gradient(rgba(255, 242, 248, 0.9), rgba(255, 249, 252, 0.94)),
+    url("assets/cyberkids-hero.png") center top / cover fixed,
+    linear-gradient(135deg, #fff1f7 0%, #f9f7ff 52%, #ecfbff 100%);
 }
 
-/* ============ Headings ============ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 226, 238, 0.55), rgba(255, 255, 255, 0.14));
+  z-index: -1;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  width: min(1120px, calc(100% + 16px));
+  margin: 0 auto 28px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(243, 220, 232, 0.9);
+  border-top: 0;
+  border-radius: 0 0 22px 22px;
+  background: rgba(255, 248, 252, 0.94);
+  box-shadow: 0 12px 28px rgba(149, 78, 111, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.site-brand,
+.site-nav a {
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 900;
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--pink-deep), #f6a8c4);
+  box-shadow: 0 10px 20px rgba(232, 132, 170, 0.25);
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.site-nav a,
+.site-nav button {
+  min-height: 38px;
+  margin: 0;
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  letter-spacing: 0;
+}
+
 h1 {
-  color: #ff6b6b;
-  font-size: 48px;
-  margin-bottom: 15px;
-  text-shadow: 3px 3px 0px #ffeb3b, 5px 5px 10px rgba(0,0,0,0.2);
-  animation: bounce 1s ease-in-out;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  margin: 6px auto 10px;
+  max-width: 980px;
+  color: #263047;
+  font-size: clamp(2rem, 5vw, 4.2rem);
+  line-height: 1.05;
+  font-weight: 900;
 }
 
 h2 {
-  color: #4ecdc4;
-  font-size: 32px;
-  margin-bottom: 15px;
-  text-shadow: 2px 2px #ffffff;
+  margin: 0 0 16px;
+  color: #27415f;
+  font-size: clamp(1.45rem, 3vw, 2.35rem);
+  line-height: 1.12;
 }
 
 h3 {
-  color: #ff6b6b;
-  font-size: 24px;
-  margin-bottom: 10px;
+  margin: 18px 0 12px;
+  color: #31516f;
+  font-size: 1.35rem;
 }
 
-/* ============ Paragraphs ============ */
-p {
-  color: #2d3436;
-  font-size: 20px;
-  margin-bottom: 20px;
-  font-weight: 500;
+h4 {
+  margin: 16px 0 8px;
+  color: #48637f;
+  font-size: 1rem;
 }
 
-/* ============ Main Container ============ */
-#roleSelection, #authForms {
-  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-  border-radius: 25px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+p,
+li {
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+hr {
+  max-width: 860px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 28px auto;
+}
+
+body > h1 + p {
+  max-width: 640px;
+  margin: 0 auto 24px;
+  font-size: 1.15rem;
+}
+
+#roleSelection,
+#authForms,
+#childOptions,
+form,
+#childGames,
+#gameContainer,
+#game2Container,
+#quizContainer,
+#teacherActivities,
+#progress,
+#leaderboardContainer,
+#teacherStudentProgress,
+#teacherLeaderboardContainer,
+#contentTable,
+#parentChild1Progress,
+#parentChild2Progress,
+#notificationsSection,
+.admin-section,
+.lesson-box,
+.question {
+  width: min(920px, 100%);
+  margin: 22px auto;
+  padding: clamp(20px, 4vw, 34px);
+  background: var(--panel);
+  border: 1px solid rgba(223, 232, 245, 0.9);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+#roleSelection,
+#authForms,
+#childOptions,
+form {
+  max-width: 520px;
+}
+
+#roleSelection {
+  display: grid;
+  gap: 12px;
+}
+
+#childOptions,
+#authForms {
   display: inline-block;
-  padding: 35px 50px;
-  margin-top: 20px;
-  max-width: 450px;
-  border: 4px solid #ffeb3b;
 }
 
-/* ============ Buttons ============ */
-button {
-  margin: 12px;
-  padding: 18px 35px;
-  font-size: 20px;
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 700;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-  text-transform: uppercase;
-  letter-spacing: 1px;
+#childGames {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
 }
 
-button:hover {
-  transform: scale(1.1) translateY(-3px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-}
-
-button:active {
-  transform: scale(0.98);
-}
-
-/* Role Buttons with Fun Colors */
-#childBtn {
-  background: linear-gradient(135deg, #ff9ff3 0%, #feca57 100%);
-  color: #fff;
-}
-
-#childBtn:hover {
-  background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
-}
-
-#parentBtn {
-  background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%);
-  color: #fff;
-}
-
-#parentBtn:hover {
-  background: linear-gradient(135deg, #0abde3 0%, #48dbfb 100%);
-}
-
-#teacherBtn {
-  background: linear-gradient(135deg, #1dd1a1 0%, #10ac84 100%);
-  color: #fff;
-}
-
-#teacherBtn:hover {
-  background: linear-gradient(135deg, #10ac84 0%, #1dd1a1 100%);
-}
-
-/* Action Buttons */
-#backFromParentLogin, #backFromParentSignup, #backFromChildSignup, #backFromTeacherLogin {
-  background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);
-  color: #2d3436;
-  font-size: 16px;
-}
-
-button[type="submit"] {
-  background: linear-gradient(135deg, #00b894 0%, #00d2a0 100%);
-  color: white;
-  font-size: 22px;
-}
-
-button[type="submit"]:hover {
-  background: linear-gradient(135deg, #00d2a0 0%, #00b894 100%);
-}
-
-/* Game Buttons */
-#childGames button {
-  background: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%);
-  color: white;
-  border-radius: 20px;
-  font-size: 22px;
-  padding: 20px 40px;
-  margin: 15px;
-}
-
-#childGames button:hover {
-  background: linear-gradient(135deg, #fdcb6e 0%, #fd79a8 100%);
-  transform: scale(1.15) rotate(2deg);
-}
-
-/* ============ Input Fields ============ */
-input {
-  display: block;
-  margin: 15px auto;
-  padding: 18px;
-  width: 85%;
-  border-radius: 15px;
-  border: 3px solid #dfe6e9;
-  transition: 0.3s ease;
-  font-size: 18px;
-  background: #fff;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
-}
-
-input:focus {
-  border-color: #00b894;
-  box-shadow: 0 0 10px rgba(0,184,148,0.4);
-  outline: none;
-  transform: scale(1.02);
-}
-
-input::placeholder {
-  color: #b2bec3;
-  font-style: italic;
-}
-
-/* ============ Tables ============ */
-table {
-  width: 90%;
-  margin: 20px auto;
-  border-collapse: collapse;
-  border-radius: 15px;
-  overflow: hidden;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-  background: white;
-}
-
-th, td {
-  padding: 15px 20px;
-  border-bottom: 2px solid #f1f1f1;
-  font-size: 18px;
-}
-
-th {
-  background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
-  color: white;
-  font-weight: bold;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-tr:nth-child(even) {
-  background-color: #f8f9fa;
-}
-
-tr:hover {
-  background-color: #e9ecef;
-  transform: scale(1.01);
-  transition: all 0.2s ease;
-}
-
-/* ============ Dashboard Progress ============ */
 #progress {
-  background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
-  border-radius: 20px;
-  padding: 25px;
-  margin: 20px auto;
-  max-width: 500px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  border: 3px solid #ff6b6b;
+  max-width: 620px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
 }
 
 #progress p {
-  font-size: 22px;
-  color: #2d3436;
-  margin: 10px 0;
+  margin: 0;
+  padding: 16px;
+  background: #f8fbff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: #415069;
 }
 
-#progress span {
-  font-weight: bold;
-  color: #ff6b6b;
-  font-size: 26px;
+#progress span,
+#childPoints {
+  display: inline-block;
+  min-width: 2ch;
+  color: #1d8f89;
+  font-weight: 900;
 }
 
-/* ============ Footer ============ */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  min-height: 46px;
+  margin: 8px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 999px;
+  color: #203047;
+  background: linear-gradient(135deg, #fff8fb 0%, #ffe4ef 100%);
+  border: 1px solid #f4c9db;
+  box-shadow: 0 10px 24px rgba(149, 78, 111, 0.14);
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(149, 78, 111, 0.2);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button[type="submit"],
+#childBtn,
+#parentBtn,
+#teacherBtn,
+#adminBtn,
+#showLeaderboardBtn,
+#showTeacherLeaderboard,
+#saveLimitBtn,
+#downloadReportBtn,
+#game1FinishBtn,
+#game2FinishBtn,
+#quizFinishBtn {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--pink-deep) 0%, #f8a9c5 100%);
+  border-color: transparent;
+}
+
+#parentBtn,
+#downloadReportBtn {
+  background: linear-gradient(135deg, #ffe0ec 0%, #ffc6dc 100%);
+}
+
+#teacherBtn,
+#saveLimitBtn {
+  background: linear-gradient(135deg, #f9d2e3 0%, #ccefe8 100%);
+}
+
+#adminBtn,
+#showLeaderboardBtn,
+#showTeacherLeaderboard {
+  background: linear-gradient(135deg, #f3d7ff 0%, #ffc8dc 100%);
+}
+
+.danger-button {
+  color: #ffffff;
+  background: linear-gradient(135deg, #d84f77 0%, #b73f61 100%);
+  border-color: transparent;
+}
+
+input,
+select,
+textarea {
+  display: block;
+  width: min(100%, 420px);
+  margin: 12px auto;
+  padding: 14px 16px;
+  border: 1px solid #d7e5f3;
+  border-radius: 16px;
+  color: var(--ink);
+  background: rgba(255, 250, 253, 0.94);
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 4px rgba(248, 184, 208, 0.28);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #91a0b8;
+}
+
+input[type="radio"] {
+  display: inline-block;
+  width: auto;
+  margin: 0 8px 0 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+label {
+  display: block;
+  max-width: 620px;
+  margin: 10px auto;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #ffffff;
+  color: #415069;
+  text-align: left;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px auto;
+  overflow: hidden;
+  background: var(--panel-solid);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(78, 103, 148, 0.12);
+}
+
+th,
+td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #edf2f8;
+  text-align: left;
+  color: #45536c;
+}
+
+th {
+  color: #263047;
+  background: #fff0f6;
+  font-weight: 900;
+}
+
+tr:last-child td {
+  border-bottom: 0;
+}
+
+.activity-card,
+.notification-card,
+.bubble-card {
+  max-width: 680px;
+  margin: 14px auto;
+  padding: 18px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 24px rgba(78, 103, 148, 0.11);
+}
+
+.activity-card {
+  text-align: left;
+  border-left: 8px solid var(--pink);
+}
+
+#notificationsSection {
+  background: linear-gradient(135deg, rgba(255, 249, 252, 0.97), rgba(255, 239, 247, 0.97));
+  border-color: rgba(248, 184, 208, 0.7);
+}
+
+#notificationsList p {
+  margin: 10px auto;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #fff0f6;
+  color: #74465a;
+}
+
+.loading {
+  width: 42px;
+  height: 42px;
+  margin: 20px auto;
+  border: 5px solid #e7f1fb;
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+#gameArea {
+  width: min(340px, 100%);
+  margin: 22px auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+#gameContainer {
+  display: none;
+}
+
+.linkBtn {
+  margin: 10px;
+  padding: 12px 16px;
+}
+
+.box {
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(78, 103, 148, 0.14);
+  transition: transform 0.18s ease;
+}
+
+.box:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.green {
+  background-color: var(--mint) !important;
+}
+
+.red {
+  background-color: var(--coral) !important;
+}
+
+#passwordDisplay,
+#game1Message,
+#game2Message,
+#quizMessage,
+#msg,
+#loginError,
+#loginMessage,
+#limitMessage {
+  font-weight: 800;
+  color: #31516f;
+}
+
 footer {
-  background: linear-gradient(135deg, #2d3436 0%, #636e72 100%);
-  color: white;
-  padding: 40px 20px;
-  margin-top: 60px;
-  border-radius: 20px 20px 0 0;
+  width: min(1100px, 100%);
+  margin: 54px auto 0;
+  padding: 28px;
+  border-radius: 24px;
+  background: rgba(83, 51, 72, 0.92);
+  box-shadow: var(--shadow);
 }
 
 .footer-content {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.footer-section {
-  flex: 1;
-  min-width: 250px;
-  margin: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 24px;
   text-align: left;
 }
 
 .footer-section h3 {
-  color: #feca57;
-  margin-bottom: 15px;
-  font-size: 24px;
+  color: #ffffff;
 }
 
-.footer-section p, .footer-section a {
-  color: #dfe6e9;
-  font-size: 16px;
-  line-height: 1.8;
-  text-decoration: none;
-}
-
-.footer-section a:hover {
-  color: #feca57;
-  text-decoration: underline;
+.footer-section p,
+.footer-section a,
+.footer-bottom {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
 }
 
 .footer-bottom {
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 2px solid #636e72;
-  text-align: center;
-  color: #b2bec3;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
 }
 
-/* ============ Activity Cards ============ */
-.activity-card {
-  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-  border-radius: 15px;
-  padding: 20px;
-  margin: 15px auto;
-  max-width: 400px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  border-left: 5px solid #00b894;
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.activity-card:hover {
-  transform: translateX(10px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  transition: all 0.3s ease;
-}
-
-/* ============ Leaderboard ============ */
-#leaderboardContainer table {
-  background: linear-gradient(135deg, #fff 0%, #f1faff 100%);
-}
-
-#leaderboardContainer th {
-  background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%);
-}
-
-/* ============ Responsive Design ============ */
-@media (max-width: 600px) {
+@media (max-width: 720px) {
   body {
-    padding: 15px;
+    padding: 0 12px 22px;
+    background-attachment: scroll;
   }
 
-  h1 {
-    font-size: 36px;
+  .site-header {
+    width: calc(100% + 12px);
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: 20px;
   }
 
-  h2 {
-    font-size: 28px;
-  }
-
-  #roleSelection, #authForms {
-    width: 90%;
-    padding: 25px;
+  .site-brand,
+  .site-nav {
+    justify-content: center;
   }
 
   button {
     width: 100%;
-    margin: 10px 0;
-    font-size: 18px;
-    padding: 15px;
+    margin: 8px 0;
   }
 
-  .footer-content {
-    flex-direction: column;
+  th,
+  td {
+    padding: 12px 10px;
+    font-size: 0.9rem;
   }
-
-  .footer-section {
-    text-align: center;
-  }
-}
-
-/* ============ Fun Animations ============ */
-@keyframes wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(5deg); }
-  75% { transform: rotate(-5deg); }
-}
-
-button:hover {
-  animation: wiggle 0.5s ease-in-out;
-}
-
-/* ============ Loading Spinner ============ */
-.loading {
-  border: 5px solid #f3f3f3;
-  border-top: 5px solid #ff6b6b;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  margin: 20px auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }

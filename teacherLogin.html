@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Teacher Login</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h1>👩‍🏫 Teacher Login</h1>
+  <h1>Teacher Login</h1>
   <form id="teacherLoginForm">
     <input type="email" id="teacherEmail" placeholder="Email" required>
     <input type="password" id="teacherPassword" placeholder="Password" required>
     <button type="submit">Login</button>
-    <button type="button" onclick="window.location.href='index.html'">⬅️ Back</button>
+    <button type="button" onclick="window.location.href='index.html'">Back</button>
 
   </form>
   <p id="loginMessage" style="color:red;"></p>
@@ -39,36 +39,30 @@
     }
 
     try {
-      const { data, error, status } = await supabase
-        .from("teachers")
-        .select("*")
-        .eq("email", email);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase(),
+        password
+      });
 
-      if (error) {
-        msg.textContent = "Error querying database. Check console for details.";
-        console.error("Supabase error:", error);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        msg.textContent = "No teacher found with that email.";
-        return;
-      }
-
-      if (data.length > 1) {
-        msg.textContent = "Multiple users found with same email — check database.";
-        console.warn("multiple teacher rows:", data);
-        return;
-      }
-
-      const teacher = data[0];
-
-      if (teacher.password !== password) {
+      if (error || !data.session) {
         msg.textContent = "Invalid email or password.";
         return;
       }
 
-      localStorage.setItem("teacherEmail", email);
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || profile?.role !== "teacher") {
+        await supabase.auth.signOut();
+        msg.textContent = "This account is not a teacher account.";
+        return;
+      }
+
+      localStorage.setItem("teacherEmail", email.toLowerCase());
+      localStorage.setItem("userRole", "teacher");
       window.location.href = "teacherDashboard.html";
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -76,6 +70,8 @@
     }
   });
 </script>
+  <script src="appShell.js?v=1"></script>
+
 
 </body>
 </html>

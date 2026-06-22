@@ -3,6 +3,27 @@ document.addEventListener("DOMContentLoaded", () => {
     var { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CYBERKIDS_CONFIG;
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+  function friendlyAuthMessage(error) {
+    if (!error) return "Something went wrong. Please try again.";
+    const message = (error.message || "").toLowerCase();
+    if (message.includes("already registered") || message.includes("already exists")) {
+      return "An account already exists with this email. Please log in instead.";
+    }
+    if (message.includes("invalid login credentials")) {
+      return "Invalid email or password.";
+    }
+    if (message.includes("rate limit") || message.includes("too many") || message.includes("email rate")) {
+      return "Too many signup emails were sent. Please wait a while before trying again, or turn off email confirmation while testing locally.";
+    }
+    if (message.includes("password")) {
+      return "Please use a stronger password.";
+    }
+    if (message.includes("database") || message.includes("child_email_not_found")) {
+      return "Please make sure the child email belongs to an existing child account, then try again.";
+    }
+    return "We couldn't complete that request. Please check your details and try again.";
+  }
+
   // DOM Elements
   const childBtn = document.getElementById('childBtn');
   const parentBtn = document.getElementById('parentBtn');
@@ -81,68 +102,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // التحقق من أن البيانات الأساسية موجودة
     if (!parentEmail || !parentPassword || !childEmail1 || !childAge1) {
-      alert("❌ Please fill in all required fields!");
+      alert("Please fill in all required fields.");
       return;
     }
 
-    // ✅ التحقق من الطفل الأول (إجباري)
-    const { data: child1Data, error: child1Error } = await supabase
-      .from("children")
-      .select("email")
-      .eq("email", childEmail1)
-      .single();
-
-    if (child1Error || !child1Data) {
-      alert("❌ First child not found. Please make sure your first child has an account.");
-      console.error("Child 1 error:", child1Error);
+    if (parentEmail === childEmail1 || (childEmail2 && parentEmail === childEmail2)) {
+      alert("Parent email must be different from the child email. Use your own parent email, then enter the child email in the child field.");
       return;
     }
 
-    // ✅ التحقق من الطفل الثاني (اختياري)
-    let child2Valid = false;
-    if (childEmail2 && childEmail2.length > 0) {
-      const { data: child2Data, error: child2Error } = await supabase
-        .from("children")
-        .select("email")
-        .eq("email", childEmail2)
-        .single();
+    const { data: firstChildExists, error: firstChildCheckError } = await supabase
+      .rpc("child_account_exists", { child_email: childEmail1 });
 
-      if (child2Error || !child2Data) {
-        alert("⚠️ Second child email not found. Please verify the email or leave it empty.");
-        console.error("Child 2 error:", child2Error);
+    if (firstChildCheckError || !firstChildExists) {
+      alert("First child account not found. Please make sure your child signs up first, then use the same child email here.");
+      console.error("First child lookup error:", firstChildCheckError);
+      return;
+    }
+
+    if (childEmail2) {
+      const { data: secondChildExists, error: secondChildCheckError } = await supabase
+        .rpc("child_account_exists", { child_email: childEmail2 });
+
+      if (secondChildCheckError || !secondChildExists) {
+        alert("Second child account not found. Please check the email or leave the second child fields empty.");
+        console.error("Second child lookup error:", secondChildCheckError);
         return;
       }
-      child2Valid = true;
     }
 
-    // ✅ إضافة حساب الوالد مع طفل واحد أو طفلين
-    const parentData = {
+    const { data, error } = await supabase.auth.signUp({
       email: parentEmail,
       password: parentPassword,
-      childEmail: childEmail1,
-      childAge: parseInt(childAge1)
-    };
-
-    // إضافة الطفل الثاني إذا كان موجود
-    if (child2Valid && childEmail2) {
-      parentData.childemail2 = childEmail2;  // ✅ lowercase
-      parentData.childage2 = parseInt(childAge2);  // ✅ lowercase
-    }
-
-    const { data, error } = await supabase.from("parents").insert([parentData]);
+      options: {
+        emailRedirectTo: `${window.location.origin}/index.html`,
+        data: {
+          role: "parent",
+          childEmail: childEmail1,
+          childAge: String(childAge1),
+          childEmail2: childEmail2 || "",
+          childAge2: childAge2 || ""
+        }
+      }
+    });
 
     if (error) {
-      alert("❌ Error creating parent account!\n\nDetails: " + error.message + "\n\nCheck console for more info.");
-      console.error("Full error details:", error);
-      console.error("Error code:", error.code);
-      console.error("Error hint:", error.hint);
-      console.error("Error details:", error.details);
+      alert(friendlyAuthMessage(error));
+      console.error("Parent signup error:", error);
       return;
     }
 
-    alert("✅ Parent account created successfully!");
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      alert("An account already exists with this parent email. Please log in instead, or use a different parent email.");
+      return;
+    }
+
+    if (!data.session) {
+      alert("Parent account created. Please check your email to confirm your account, then log in.");
+      signupParentForm.reset();
+      return;
+    }
+
+    alert("Parent account created successfully.");
     signupParentForm.reset();
     localStorage.setItem("parentEmail", parentEmail);
+    localStorage.setItem("userRole", "parent");
     window.location.href = "parentDashboard.html";
   });
 
@@ -153,23 +177,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = document.getElementById("loginParentEmail").value.trim().toLowerCase();
     const password = document.getElementById("loginParentPassword").value.trim();
 
-    const { data, error } = await supabase
-      .from("parents")
-      .select("*")
-      .eq("email", email)
-      .single();
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error || !data) {
-      alert("❌ Account not found. Please sign up first.");
+    if (error || !data.session) {
+      alert(friendlyAuthMessage(error));
       return;
     }
 
-    if (data.password !== password) {
-      alert("❌ Incorrect password!");
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError || profile?.role !== "parent") {
+      await supabase.auth.signOut();
+      alert("This account is not a parent account.");
       return;
     }
 
     localStorage.setItem("parentEmail", email);
+    localStorage.setItem("userRole", "parent");
     window.location.href = "parentDashboard.html";
   });
 
@@ -182,21 +210,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const age = document.getElementById("childAge").value;
     const password = document.getElementById("childPassword").value;
 
-    const { data, error } = await supabase
-      .from("children")
-      .insert([{ 
-        firstName, 
-        lastName, 
-        email, 
-        age: parseInt(age), 
-        password, 
-        progress: { "gamesCompleted": 0, "quizzesCompleted": 0, "lessonsCompleted": 0 },
-        points: 0
-      }]);
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/childLogin.html`,
+        data: {
+          role: "child",
+          firstName,
+          lastName,
+          age: String(age)
+        }
+      }
+    });
 
-    if (error) return alert("Error: " + error.message);
+    if (error) {
+      alert(friendlyAuthMessage(error));
+      console.error("Child signup error:", error);
+      return;
+    }
+
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      alert("An account already exists with this child email. Please log in instead.");
+      return;
+    }
+
+    if (!data.session) {
+      alert("Child account created. Please check your email to confirm your account, then log in.");
+      signupChildForm.reset();
+      return;
+    }
+
     alert("Child registered successfully!");
-    localStorage.setItem("childEmail", email);
+    localStorage.setItem("childEmail", email.trim().toLowerCase());
+    localStorage.setItem("userRole", "child");
     window.location.href = "childDashboard.html";
   });
 

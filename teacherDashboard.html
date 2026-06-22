@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Teacher Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h1>👩‍🏫 Teacher Dashboard</h1>
+  <h1>Teacher Dashboard</h1>
   <button onclick="logout()">Logout</button>
   <p>View all students and their progress like an admin!</p>
 
@@ -15,8 +15,7 @@
     <!-- JS will fill student progress dynamically -->
   </div>
 
-  <!-- 🏆 زر عرض الليدر بورد -->
-  <button id="showTeacherLeaderboard" style="margin-top:15px;">🏆 Show Children Leaderboard</button>
+  <button id="showTeacherLeaderboard" style="margin-top:15px;">Show Children Leaderboard</button>
   <div id="teacherLeaderboardContainer" style="display:none; margin-top:20px;"></div>
 
   <!-- Supabase Library -->
@@ -24,22 +23,44 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // Require a teacher session before loading dashboard data.
-    const teacherEmail = localStorage.getItem("teacherEmail");
-    if (!teacherEmail) {
-      alert("Access denied! Please login first.");
-      window.location.href = "teacherLogin.html";
-    }
-
-    function logout() {
-      localStorage.removeItem("teacherEmail");
-      window.location.href = "teacherLogin.html";
-    }
-
     var { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CYBERKIDS_CONFIG;
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let teacherEmail = localStorage.getItem("teacherEmail");
+
+    async function requireTeacherSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = "teacherLogin.html";
+        return null;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role !== "teacher") {
+        await supabase.auth.signOut();
+        window.location.href = "teacherLogin.html";
+        return null;
+      }
+
+      teacherEmail = user.email.toLowerCase();
+      localStorage.setItem("teacherEmail", teacherEmail);
+      return user;
+    }
+
+    async function logout() {
+      await supabase.auth.signOut();
+      localStorage.removeItem("teacherEmail");
+      localStorage.removeItem("userRole");
+      window.location.href = "teacherLogin.html";
+    }
 
     async function loadAllChildren() {
+      const user = await requireTeacherSession();
+      if (!user) return;
       const { data, error } = await supabase
         .from("children")
         .select("firstName, lastName, email, age, progress");
@@ -47,7 +68,7 @@
       const container = document.getElementById("teacherStudentProgress");
 
       if (error) {
-        container.textContent = "❌ Error loading data!";
+        container.textContent = "Error loading data.";
         console.error(error);
         return;
       }
@@ -92,23 +113,25 @@
     loadAllChildren();
 
     document.getElementById("showTeacherLeaderboard").addEventListener("click", async () => {
+      const user = await requireTeacherSession();
+      if (!user) return;
       const container = document.getElementById("teacherLeaderboardContainer");
       container.style.display = "block";
       container.innerHTML = "<p>Loading leaderboard...</p>";
 
       const { data, error } = await supabase
-        .from("children")
+        .from("child_leaderboard")
         .select("firstName, lastName, points")
         .order("points", { ascending: false });
 
       if (error) {
-        container.innerHTML = "❌ Error loading leaderboard.";
+        container.innerHTML = "Error loading leaderboard.";
         console.error(error);
         return;
       }
 
       let tableHTML = `
-        <h3>🏅 Students Leaderboard</h3>
+        <h3>Students Leaderboard</h3>
         <table border="1" style="margin:auto; border-collapse:collapse; width:70%; box-shadow:0 0 10px rgba(0,0,0,0.1);">
           <tr style="background-color:#0077b6; color:white;">
             <th>First Name</th>
@@ -144,6 +167,8 @@
 
   <script>
     async function loadContentList() {
+      const user = await requireTeacherSession();
+      if (!user) return;
       const { data, error } = await supabase
         .from('content_library')
         .select('id, title, type, isvisible')
@@ -156,7 +181,7 @@
       data.forEach(item => {
         const opt = document.createElement("option");
         opt.value = item.id;
-        opt.textContent = `${item.title} (${item.type}) ${item.isvisible ? '✅' : '🚫'}`;
+        opt.textContent = `${item.title} (${item.type}) ${item.isvisible ? 'Visible' : 'Hidden'}`;
         dropdown.appendChild(opt);
       });
 
@@ -168,7 +193,7 @@
           <tr>
             <td>${item.title}</td>
             <td>${item.type}</td>
-            <td>${item.isvisible ? "Visible ✅" : "Hidden 🚫"}</td>
+            <td>${item.isvisible ? "Visible" : "Hidden"}</td>
           </tr>`;
       });
       tableHTML += "</table>";
@@ -176,6 +201,8 @@
     }
 
     async function updateVisibility(show) {
+      const user = await requireTeacherSession();
+      if (!user) return;
       const id = document.getElementById("contentSelect").value;
       if (!id) return;
 
@@ -185,7 +212,7 @@
         .eq("id", id);
 
       if (error) return alert("Error updating content");
-      alert(show ? "✅ The activity is now visible to students!" : "🚫 The activity is now hidden.");
+      alert(show ? "The activity is now visible to students." : "The activity is now hidden.");
       loadContentList();
     }
 
@@ -194,5 +221,7 @@
 
     loadContentList();
   </script>
+  <script src="appShell.js?v=1"></script>
+
 </body>
 </html>

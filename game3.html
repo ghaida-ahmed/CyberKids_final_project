@@ -4,64 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Avoid the Red Boxes</title>
-  <style>
-    body {
-      font-family: 'Comic Sans MS', sans-serif;
-      text-align: center;
-      background: #f0f9ff;
-    }
-    h2 {
-      color: #0077b6;
-    }
-    #gameArea {
-      width: 320px;
-      height: 320px;
-      margin: 20px auto;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-gap: 8px;
-    }
-    .box {
-      width: 70px;
-      height: 70px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    .box:hover {
-      transform: scale(1.1);
-    }
-    .green {
-      background-color: #90ee90;
-    }
-    .red {
-      background-color: #ff6961;
-    }
-    #msg {
-      font-weight: bold;
-      color: #333;
-      margin-top: 10px;
-    }
-    button {
-      background: #0077b6;
-      color: white;
-      border: none;
-      padding: 8px 18px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #005b8a;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h2>🟢 Avoid the Red Boxes!</h2>
+  <h1>Avoid the Red Boxes</h1>
   <p>Click on the green boxes only! If you click a red one, the game ends.</p>
   
   <div id="gameArea"></div>
   <p id="msg">Score: 0</p>
-  <button onclick="window.history.back()">⬅ Back</button>
+  <button onclick="window.history.back()">Back</button>
 
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -90,7 +41,7 @@
 
       if (box.classList.contains("red")) {
         box.style.border = "3px solid black";
-        msg.textContent = `❌ Game Over! Your final score: ${score}`;
+        msg.textContent = `Game over. Your final score: ${score}`;
         gameOver = true;
         updateProgress();
       } else {
@@ -101,10 +52,12 @@
     }
 
     async function updateProgress() {
-  const email = localStorage.getItem("childEmail");
+  const { data: { user } } = await supabase.auth.getUser();
+  const email = user?.email?.toLowerCase();
   if (!email) return;
+  localStorage.setItem("childEmail", email);
 
-  // 🧩 الخطوة 1: نجيب آخر progress وpoints من قاعدة البيانات
+  // Get the latest progress and points.
   const { data: childData, error } = await supabase
     .from("children")
     .select("progress, points")
@@ -116,14 +69,14 @@
     return;
   }
 
-  // 🧩 الخطوة 2: نزيد القيم الحالية
+  // Add the new progress values.
   let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
   let currentPoints = childData.points || 0;
 
   progress.gamesCompleted += 1;
-  currentPoints += 10; // ✅ نضيف 10 فوق النقاط القديمة
+  currentPoints += 10;
 
-  // 🧩 الخطوة 3: نحدّث القيم الجديدة بالداتا بيس
+  // Save progress.
   await supabase
     .from("children")
     .update({ progress, points: currentPoints })
@@ -132,5 +85,7 @@
 
     startGame();
   </script>
+  <script src="appShell.js?v=1"></script>
+
 </body>
 </html>

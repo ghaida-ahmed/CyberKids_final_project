@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Child Login</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h1>🎮 Child Login</h1>
+  <h1>Child Login</h1>
   <form id="childLoginForm">
     <input type="email" id="loginEmail" placeholder="Email" required>
     <input type="password" id="loginPassword" placeholder="Password" required>
     <button type="submit">Login</button>
-    <button type="button" onclick="window.location.href='index.html'">⬅️ Back</button>
+    <button type="button" onclick="window.location.href='index.html'">Back</button>
 
   </form>
 
@@ -26,31 +26,39 @@
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const loginForm = document.getElementById("childLoginForm");
+    const loginError = document.getElementById("loginError");
+
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      loginError.textContent = "";
 
-      const email = document.getElementById("loginEmail").value;
+      const email = document.getElementById("loginEmail").value.trim().toLowerCase();
       const password = document.getElementById("loginPassword").value;
 
-      const { data, error } = await supabase
-        .from("children")
-        .select("*")
-        .eq("email", email)
-        .single();
-
-      if (error || !data) {
-        document.getElementById("loginError").textContent = "Invalid email or password!";
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.session) {
+        loginError.textContent = "Invalid email or password.";
         return;
       }
 
-      if (data.password !== password) {
-        document.getElementById("loginError").textContent = "Invalid email or password!";
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || profile?.role !== "child") {
+        await supabase.auth.signOut();
+        loginError.textContent = "This account is not a child account.";
         return;
       }
 
       localStorage.setItem("childEmail", email);
+      localStorage.setItem("userRole", "child");
       window.location.href = "childDashboard.html";
     });
   </script>
+  <script src="appShell.js?v=1"></script>
+
 </body>
 </html>

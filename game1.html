@@ -4,14 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Click-the-Safe-Links</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    .linkBtn { margin: 10px; padding: 10px; }
-    #gameContainer { display: none; }
-  </style>
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h1>🖱️ Click the Safe Links!</h1>
+  <h1>Click the Safe Links</h1>
   <p>Click only on safe links to protect yourself online.</p>
 
   <div id="gameContainer">
@@ -40,19 +36,21 @@
       btn.addEventListener("click", () => {
         const safe = btn.dataset.safe === "true";
         if (safe) {
-          game1Message.textContent = "✅ Correct! Safe link clicked.";
+          game1Message.textContent = "Correct. Safe link clicked.";
         } else {
-          game1Message.textContent = "⚠️ Unsafe link! Don't click!";
+          game1Message.textContent = "Unsafe link. Do not click it.";
         }
       });
     });
 
     // زر إنهاء اللعبة
     finishBtn.addEventListener("click", async () => {
-      const email = localStorage.getItem("childEmail");
+      const { data: { user } } = await supabase.auth.getUser();
+      const email = user?.email?.toLowerCase();
       if (!email) return alert("No child email found!");
+      localStorage.setItem("childEmail", email);
 
-      // 🧩 الخطوة 1: جلب آخر progress وpoints من قاعدة البيانات
+      // Get the latest progress and points.
       const { data: childData, error } = await supabase
         .from("children")
         .select("progress, points")
@@ -65,14 +63,14 @@
         return;
       }
 
-      // 🧩 الخطوة 2: حساب القيم الجديدة تراكميًا
+      // Add the new progress values.
       let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
       let currentPoints = childData.points || 0;
 
       progress.gamesCompleted += 1;
-      currentPoints += 10; // ✅ نضيف 10 فوق النقاط القديمة
+      currentPoints += 10;
 
-      // 🧩 الخطوة 3: تحديث قاعدة البيانات
+      // Save progress.
       const { error: updateError } = await supabase
         .from("children")
         .update({ progress, points: currentPoints })
@@ -84,9 +82,11 @@
         return;
       }
 
-      alert("🎉 Great job! You earned 10 points!");
+      alert("Great job. You earned 10 points.");
       window.location.href = "childDashboard.html";
     });
   </script>
+  <script src="appShell.js?v=1"></script>
+
 </body>
 </html>

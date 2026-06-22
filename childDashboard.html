@@ -4,23 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Child Dashboard</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h1>🎮 Child Dashboard</h1>
+  <h1>Child Dashboard</h1>
   <p id="welcomeChild">Loading...</p>
   <p id="progressChild">Progress: Loading...</p>
-  <p>Select a game or quiz to play and learn about online safety!</p>
+  <p>Choose an activity and keep building your online safety skills.</p>
 
   <div id="childGames">
-    <button id="game1Btn">Game 1 🧩</button>
-    <button id="game2Btn">Game 2 🧩</button>
-    <button id="game3Btn">Game 3 🧩</button>
-    <button id="quiz1Btn">Quiz 1 ❓</button>
+    <button id="game1Btn">Safe Links Game</button>
+    <button id="game2Btn">Password Game</button>
+    <button id="game3Btn">Quick Choice Game</button>
+    <button id="quiz1Btn">Safety Quiz</button>
   </div>
 
   <hr>
-  <h3>🆕 New from Your Teacher</h3>
+  <h3>New from Your Teacher</h3>
   <div id="teacherActivities"></div>
 
   <div id="progress">
@@ -30,8 +30,7 @@
   </div>
   <p>Points: <span id="childPoints">0</span></p>
 
-  <!-- 🏆 Leaderboard Section -->
-  <button id="showLeaderboardBtn">🏆 View Leaderboard</button>
+  <button id="showLeaderboardBtn">View Leaderboard</button>
   <div id="leaderboardContainer" style="display:none; margin-top:20px;"></div>
 
   <!-- Supabase Library -->
@@ -42,8 +41,33 @@
     var { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CYBERKIDS_CONFIG;
     var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    async function requireChildSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = "childLogin.html";
+        return null;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role !== "child") {
+        await supabase.auth.signOut();
+        window.location.href = "childLogin.html";
+        return null;
+      }
+
+      localStorage.setItem("childEmail", user.email.toLowerCase());
+      return user;
+    }
+
     async function loadChild() {
-      const email = localStorage.getItem("childEmail");
+      const user = await requireChildSession();
+      if (!user) return;
+      const email = user.email.toLowerCase();
       if (!email) return;
       const { data, error } = await supabase
         .from("children")
@@ -73,7 +97,7 @@
       if (!data || data.length === 0) {
         html = "<p>No new activities available right now.</p>";
       } else {
-        html = "<p>🎉 Your teacher added new activities! Check them out:</p>";
+        html = "<p>Your teacher added new activities. Check them out:</p>";
         data.forEach(item => {
           html += `
             <div class="activity-card">
@@ -102,7 +126,7 @@
       const { data: plays, error: playError } = await supabase
         .from("play_logs")
         .select("*")
-        .eq("childEmail", childEmail)
+        .eq("childemail", childEmail)
         .eq("date", today);
       if (playError) return true;
       const playCount = plays ? plays.length : 0;
@@ -112,7 +136,7 @@
     async function logPlayActivity() {
       const childEmail = localStorage.getItem("childEmail");
       const today = new Date().toISOString().split("T")[0];
-      await supabase.from("play_logs").insert([{ childEmail, date: today }]);
+      await supabase.from("play_logs").insert([{ childemail: childEmail, date: today }]);
     }
 
     async function handlePlayNavigation(url) {
@@ -129,10 +153,10 @@
         const limit = parent?.dailylimit || 0;
         
         alert(
-          "🚫 Daily Play Limit Reached!\n\n" +
+          "Daily Play Limit Reached\n\n" +
           "Your parent has limited you to " + limit + " game" + (limit > 1 ? "s" : "") + " per day.\n\n" +
           "You've already played " + limit + " game" + (limit > 1 ? "s" : "") + " today.\n\n" +
-          "Try again tomorrow! 🌙"
+          "Try again tomorrow."
         );
         return;
       }
@@ -140,17 +164,17 @@
       window.location.href = url;
     }
 
-    // ✅ الألعاب (تُفحص)
+    // Games with play-limit checks.
     document.getElementById("game1Btn").addEventListener("click", () => handlePlayNavigation("game1.html"));
     document.getElementById("game2Btn").addEventListener("click", () => handlePlayNavigation("game2.html"));
     document.getElementById("game3Btn").addEventListener("click", () => handlePlayNavigation("game3.html"));
 
-    // ✅ الكويز (ما يتأثر بالحد)
+    // Quiz navigation.
     document.getElementById("quiz1Btn").addEventListener("click", () => {
       window.location.href = "quiz1.html";
     });
 
-    // ✅ عرض رسالة الحد المسموح
+    // Show the daily limit message.
     async function showPlayLimitMessage() {
       const childEmail = localStorage.getItem("childEmail");
       if (!childEmail) return;
@@ -163,26 +187,26 @@
       const limit = parent.dailylimit;
       const shownTodayKey = `shownLimit_${new Date().toISOString().split("T")[0]}`;
       if (localStorage.getItem(shownTodayKey)) return;
-      alert(`🎮 Your parent has allowed you to play ${limit} game${limit > 1 ? "s" : ""} today!`);
+      alert(`Your parent has allowed you to play ${limit} game${limit > 1 ? "s" : ""} today.`);
       localStorage.setItem(shownTodayKey, "true");
     }
     showPlayLimitMessage();
 
-    // 🏆 ليدر بورد
+    // Leaderboard.
     document.getElementById("showLeaderboardBtn").addEventListener("click", async () => {
       const container = document.getElementById("leaderboardContainer");
       container.style.display = "block";
       container.innerHTML = "<p>Loading leaderboard...</p>";
       const { data, error } = await supabase
-        .from("children")
+        .from("child_leaderboard")
         .select("firstName, lastName, points")
         .order("points", { ascending: false });
       if (error) {
-        container.innerHTML = "❌ Error loading leaderboard.";
+        container.innerHTML = "Error loading leaderboard.";
         return;
       }
       let tableHTML = `
-        <h3>🏅 Top Students</h3>
+        <h3>Top Students</h3>
         <table border="1" style="margin:auto;border-collapse:collapse;width:70%;box-shadow:0 0 10px rgba(0,0,0,0.1);">
           <tr style="background-color:#0077b6;color:white;">
             <th>Name</th><th>Points</th></tr>`;
@@ -196,5 +220,7 @@
       container.innerHTML = tableHTML;
     });
   </script>
+  <script src="appShell.js?v=1"></script>
+
 </body>
 </html>

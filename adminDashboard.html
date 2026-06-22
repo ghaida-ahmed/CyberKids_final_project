@@ -4,128 +4,56 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    .admin-section {
-      background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-      border-radius: 20px;
-      padding: 30px;
-      margin: 30px auto;
-      max-width: 800px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-      border: 3px solid #6c5ce7;
-    }
-    
-    .admin-section h2 {
-      color: #6c5ce7;
-      border-bottom: 3px solid #a29bfe;
-      padding-bottom: 10px;
-      margin-bottom: 20px;
-    }
-
-    textarea {
-      width: 85%;
-      padding: 15px;
-      border-radius: 10px;
-      border: 2px solid #dfe6e9;
-      font-size: 16px;
-      font-family: 'Comic Sans MS', sans-serif;
-      margin: 10px auto;
-      display: block;
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    textarea:focus {
-      border-color: #6c5ce7;
-      outline: none;
-      box-shadow: 0 0 10px rgba(108, 92, 231, 0.3);
-    }
-
-    select {
-      width: 85%;
-      padding: 15px;
-      border-radius: 10px;
-      border: 2px solid #dfe6e9;
-      font-size: 16px;
-      margin: 10px auto;
-      display: block;
-      background: white;
-      cursor: pointer;
-    }
-
-    select:focus {
-      border-color: #6c5ce7;
-      outline: none;
-    }
-
-    .success-msg {
-      color: #00b894;
-      font-weight: bold;
-      margin-top: 15px;
-    }
-
-    .error-msg {
-      color: #ff6b6b;
-      font-weight: bold;
-      margin-top: 15px;
-    }
-
-    #ideasTable {
-      margin-top: 20px;
-      overflow-x: auto;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h1>🔐 Admin Dashboard</h1>
+  <h1>Admin Dashboard</h1>
   <p>Welcome, Admin! Manage teachers and educational content ideas.</p>
-  <button onclick="logout()" style="background: linear-gradient(135deg, #d63031 0%, #ff7675 100%);">Logout</button>
 
   <!-- Section 1: Add Teacher Account -->
   <div class="admin-section">
-    <h2>👩‍🏫 Add Teacher Account</h2>
+    <h2>Add Teacher Account</h2>
     <p>Create a new teacher account to give them access to the teacher dashboard.</p>
     
     <form id="addTeacherForm">
       <input type="email" id="teacherEmail" placeholder="Teacher Email" required>
-      <input type="password" id="teacherPassword" placeholder="Teacher Password" required>
-      <button type="submit">➕ Add Teacher</button>
+      <input type="password" id="teacherPassword" placeholder="Teacher Password" minlength="6" required>
+      <button type="submit">Add Teacher</button>
     </form>
     
     <p id="teacherMessage"></p>
 
     <hr style="margin: 30px 0;">
     
-    <h3>📋 Current Teachers</h3>
+    <h3>Current Teachers</h3>
     <div id="teachersList">Loading...</div>
   </div>
 
   <!-- Section 2: Submit Game/Quiz Ideas -->
   <div class="admin-section">
-    <h2>💡 Submit Game/Quiz/Lesson Ideas</h2>
+    <h2>Submit Game, Quiz, or Lesson Ideas</h2>
     <p>Add ideas for new educational content. The IT team will review and implement them.</p>
     
     <form id="addIdeaForm">
       <select id="ideaType" required>
         <option value="">Select Type</option>
-        <option value="game">🎮 Game</option>
-        <option value="quiz">❓ Quiz</option>
-        <option value="lesson">📚 Lesson</option>
+        <option value="game">Game</option>
+        <option value="quiz">Quiz</option>
+        <option value="lesson">Lesson</option>
       </select>
 
       <input type="text" id="ideaTitle" placeholder="Title (e.g., 'Password Safety Game')" required>
       
       <textarea id="ideaDescription" placeholder="Describe your idea in detail...&#10;&#10;For example:&#10;- What will children learn?&#10;- How does the game/quiz work?&#10;- What makes it fun and educational?" required></textarea>
 
-      <button type="submit">🚀 Submit Idea</button>
+      <button type="submit">Submit Idea</button>
     </form>
     
     <p id="ideaMessage"></p>
 
     <hr style="margin: 30px 0;">
     
-    <h3>📝 Submitted Ideas</h3>
+    <h3>Submitted Ideas</h3>
     <div id="ideasTable">Loading...</div>
   </div>
 
@@ -134,60 +62,105 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
-    // Check if admin is logged in
-    const adminEmail = localStorage.getItem("adminEmail");
-    if (!adminEmail) {
-      alert("Access denied! Please login first.");
-      window.location.href = "adminLogin.html";
+    var { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CYBERKIDS_CONFIG;
+    var createSupabaseClient = window.supabase.createClient.bind(window.supabase);
+    var supabase = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let adminEmail = localStorage.getItem("adminEmail");
+
+    async function requireAdminSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.href = "adminLogin.html";
+        return null;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role !== "admin") {
+        await supabase.auth.signOut();
+        window.location.href = "adminLogin.html";
+        return null;
+      }
+
+      adminEmail = user.email.toLowerCase();
+      localStorage.setItem("adminEmail", adminEmail);
+      return user;
     }
 
-    function logout() {
+    async function logout() {
+      await supabase.auth.signOut();
       localStorage.removeItem("adminEmail");
+      localStorage.removeItem("userRole");
       window.location.href = "adminLogin.html";
     }
-    var { SUPABASE_URL, SUPABASE_ANON_KEY } = window.CYBERKIDS_CONFIG;
-    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ========== Add Teacher Account ==========
     document.getElementById("addTeacherForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const user = await requireAdminSession();
+      if (!user) return;
       
       const email = document.getElementById("teacherEmail").value.trim().toLowerCase();
       const password = document.getElementById("teacherPassword").value.trim();
       const msg = document.getElementById("teacherMessage");
+      msg.className = "";
+      msg.textContent = "Creating teacher account...";
 
-      // Check if teacher already exists
-      const { data: existing } = await supabase
-        .from("teachers")
-        .select("email")
-        .eq("email", email);
+      const teacherAuthClient = createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          storageKey: "cyberkids-teacher-creation",
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      });
 
-      if (existing && existing.length > 0) {
+      const { error: signupError } = await teacherAuthClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role: "child",
+            firstName: "Teacher",
+            lastName: "Account",
+            age: "12"
+          }
+        }
+      });
+
+      if (signupError && !String(signupError.message).toLowerCase().includes("already")) {
         msg.className = "error-msg";
-        msg.textContent = "❌ This teacher already exists!";
+        msg.textContent = "We couldn't create that login. Please use a valid email and a stronger password.";
+        console.error(signupError);
         return;
       }
 
-      // Add new teacher
-      const { error } = await supabase
-        .from("teachers")
-        .insert([{ email, password }]);
+      const { error } = await supabase.rpc("admin_create_teacher_account", {
+        teacher_email: email,
+        teacher_password: password
+      });
 
       if (error) {
         msg.className = "error-msg";
-        msg.textContent = "❌ Error adding teacher: " + error.message;
+        msg.textContent = "We couldn't create that teacher account. Please check the email and password.";
         console.error(error);
         return;
       }
 
       msg.className = "success-msg";
-      msg.textContent = "✅ Teacher account created successfully!";
+      msg.textContent = "Teacher account created successfully.";
       document.getElementById("addTeacherForm").reset();
       loadTeachers();
     });
 
     // Load and display all teachers
     async function loadTeachers() {
+      const user = await requireAdminSession();
+      if (!user) return;
       const { data, error } = await supabase
         .from("teachers")
         .select("id, email")
@@ -206,7 +179,7 @@
       }
 
       let html = `
-        <table border="1" style="margin: auto; width: 100%; border-collapse: collapse;">
+        <table>
           <tr>
             <th>ID</th>
             <th>Email</th>
@@ -219,8 +192,7 @@
           <tr>
             <td>${teacher.id}</td>
             <td>${teacher.email}</td>
-            <td><button onclick="deleteTeacher(${teacher.id}, '${teacher.email}')" 
-                style="background: #d63031; padding: 8px 15px;">Delete</button></td>
+            <td><button class="danger-button" onclick="deleteTeacher(${teacher.id}, '${teacher.email}')">Delete</button></td>
           </tr>
         `;
       });
@@ -231,6 +203,8 @@
 
     // Delete teacher
     window.deleteTeacher = async (id, email) => {
+      const user = await requireAdminSession();
+      if (!user) return;
       if (!confirm(`Are you sure you want to delete teacher: ${email}?`)) return;
 
       const { error } = await supabase
@@ -243,13 +217,15 @@
         return;
       }
 
-      alert("✅ Teacher deleted successfully!");
+      alert("Teacher deleted successfully.");
       loadTeachers();
     };
 
     // ========== Submit Game/Quiz Ideas ==========
     document.getElementById("addIdeaForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const user = await requireAdminSession();
+      if (!user) return;
 
       const type = document.getElementById("ideaType").value;
       const title = document.getElementById("ideaTitle").value.trim();
@@ -267,19 +243,21 @@
 
       if (error) {
         msg.className = "error-msg";
-        msg.textContent = "❌ Error submitting idea: " + error.message;
+        msg.textContent = "Error submitting idea: " + error.message;
         console.error(error);
         return;
       }
 
       msg.className = "success-msg";
-      msg.textContent = "✅ Idea submitted successfully! The IT team will review it.";
+      msg.textContent = "Idea submitted successfully. The IT team will review it.";
       document.getElementById("addIdeaForm").reset();
       loadIdeas();
     });
 
     // Load and display all ideas
     async function loadIdeas() {
+      const user = await requireAdminSession();
+      if (!user) return;
       const { data, error } = await supabase
         .from("game_ideas")
         .select("*")
@@ -299,7 +277,7 @@
       }
 
       let html = `
-        <table border="1" style="margin: auto; width: 100%; border-collapse: collapse;">
+        <table>
           <tr>
             <th>Type</th>
             <th>Title</th>
@@ -310,15 +288,13 @@
       `;
 
       data.forEach(idea => {
-        const typeEmoji = idea.idea_type === 'game' ? '🎮' : 
-                         idea.idea_type === 'quiz' ? '❓' : '📚';
         const date = new Date(idea.created_at).toLocaleDateString();
         
         html += `
           <tr>
-            <td>${typeEmoji} ${idea.idea_type}</td>
+            <td>${idea.idea_type}</td>
             <td><strong>${idea.title}</strong></td>
-            <td style="text-align: left; max-width: 300px;">${idea.description}</td>
+            <td>${idea.description}</td>
             <td>${idea.submitted_by}</td>
             <td>${date}</td>
           </tr>
@@ -333,5 +309,6 @@
     loadTeachers();
     loadIdeas();
   </script>
+  <script src="appShell.js?v=1"></script>
 </body>
 </html>

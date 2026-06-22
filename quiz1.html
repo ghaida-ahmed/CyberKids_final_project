@@ -4,22 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Online Safety Quiz</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-  <h1>❓ Online Safety Quiz</h1>
+  <h1>Online Safety Quiz</h1>
   <p>Choose the correct answer to each question.</p>
 
   <div id="quizContainer">
-    <p>1️⃣ Should you share your password with friends?</p>
+    <p>Should you share your password with friends?</p>
     <button class="quizAnswerBtn" data-correct="false">Yes</button>
     <button class="quizAnswerBtn" data-correct="true">No</button>
 
-    <p>2️⃣ Is it safe to download files from unknown websites?</p>
+    <p>Is it safe to download files from unknown websites?</p>
     <button class="quizAnswerBtn" data-correct="false">Yes</button>
     <button class="quizAnswerBtn" data-correct="true">No</button>
 
-    <p>3️⃣ How can you identify phishing emails?</p>
+    <p>How can you identify phishing emails?</p>
     <button class="quizAnswerBtn" data-correct="true">Check sender & links</button>
     <button class="quizAnswerBtn" data-correct="false">Click all links to see</button>
     <p id="quizMessage"></p>
@@ -39,18 +39,20 @@
     document.querySelectorAll(".quizAnswerBtn").forEach(btn => {
       btn.addEventListener("click", () => {
         if (btn.dataset.correct === "true") {
-          quizMessage.textContent = "✅ Correct!";
+          quizMessage.textContent = "Correct.";
         } else {
-          quizMessage.textContent = "❌ Wrong answer!";
+          quizMessage.textContent = "Try again.";
         }
       });
     });
 
     quizFinishBtn.addEventListener("click", async () => {
-      const email = localStorage.getItem("childEmail");
+      const { data: { user } } = await supabase.auth.getUser();
+      const email = user?.email?.toLowerCase();
       if (!email) return alert("No child email found!");
+      localStorage.setItem("childEmail", email);
 
-      // 🧩 الخطوة 1: جلب آخر progress وpoints من قاعدة البيانات
+      // Get the latest progress and points.
       const { data: childData, error } = await supabase
         .from("children")
         .select("progress, points")
@@ -63,14 +65,14 @@
         return;
       }
 
-      // 🧩 الخطوة 2: زيادة القيم بشكل تراكمي
+      // Add the new progress values.
       let progress = childData.progress || { gamesCompleted: 0, quizzesCompleted: 0, lessonsCompleted: 0 };
       let currentPoints = childData.points || 0;
 
       progress.quizzesCompleted += 1;
-      currentPoints += 20; // ✅ تراكمي
+      currentPoints += 20;
 
-      // 🧩 الخطوة 3: تحديث البيانات
+      // Save progress.
       const { error: updateError } = await supabase
         .from("children")
         .update({ progress, points: currentPoints })
@@ -82,9 +84,11 @@
         return;
       }
 
-      alert("🎉 Great job! You earned 20 points!");
+      alert("Great job. You earned 20 points.");
       window.location.href = "childDashboard.html";
     });
   </script>
+  <script src="appShell.js?v=1"></script>
+
 </body>
 </html>
